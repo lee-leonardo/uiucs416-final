@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Style Sheet -->
+    <style href="./index.css"></style>
+  </head>
+  <body>
+    <div id="main">
+      <svg id="viewport" viewBox="0 0 300 100" width="300" height="300"></svg>
+
+      <div id="navigation">
+        <button>&lt;</button>
+        <button>1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button>&gt;</button>
+      </div>
+    </div>
+
+    <!-- Split out javascript tags -->
+    <script src="./index.js" async defer></script>
+    <script src="./rendering.js"> async</script>
+    <script src="./state.js" async></script>
+    <script src="./data.js" async></script>
+
+    <!-- Libraries used -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.independent.min.js" integrity="sha512-89IU2quof1oR2mYXl38GkyY7HQFyHtzubPPEP7DlLNAkO6FH/3AHByuHAfi0zvLP4hMtggXASW9gFzQEYn8rWg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+  </body>
+
+</html>
