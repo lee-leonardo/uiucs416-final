@@ -1,3 +1,3 @@
-window.data = {
+const data = {
 
 };
