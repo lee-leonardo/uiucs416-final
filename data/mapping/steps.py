@@ -37,11 +37,14 @@ def generateStep2(df):
   # bin to be grouped
   s2 = s2.sort_values('Year Published')
 
-  # s2['bin'] = pd.cut(s2['Year Pubished'], bins=[])#, labels=[])
-  # pd.IntervalIndex.from_breaks([-3500, 0, 500, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800])
+  bins = pd.IntervalIndex.from_breaks([-3500, 0, 500, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800], closed="left")
+  bins = bins.union(pd.interval_range(1800, 1900, freq=25, closed='left'))
+  bins = bins.union(pd.interval_range(1900, 2000, freq=5, closed='left'))
+  s2['Bin'] = pd.cut(s2['Year Published'], bins=bins)
 
   return s2[[
     'Name',
+    'Bin',
     'Year Published',
     'Users Rated', # treat as modern players played
     'Owned Users',
@@ -61,9 +64,21 @@ def generateStep3(df):
 
   s3 = s3.sort_values('Year Published')
 
-  # pd.interval_range
-  # pd.union(pd.interval_range(1800, 1900, interval=10))
+  bins = pd.IntervalIndex.from_breaks([-3500, 1700, 1800, 1900], closed="left")
+  bins = bins.union(pd.interval_range(1900, 1970, freq=10, closed='left'))
+  bins = bins.union(pd.interval_range(1970, 2000, freq=5, closed='left'))
+  bins = bins.union(pd.interval_range(2000, 2021, freq=1, closed='left'))
 
-  return s3
+  s3['Bin'] = pd.cut(s3['Year Published'], bins=bins)
+
+  return s3[[
+    'Name',
+    'Bin',
+    'Year Published',
+    'Users Rated', # treat as modern players played
+    'Owned Users',
+    'Complexity Average',
+    'Mechanics'
+  ]]
 
 
