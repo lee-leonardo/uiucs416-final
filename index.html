@@ -5,30 +5,24 @@
     <link rel="stylesheet" href="./index.css"></link>
   </head>
   <body>
-    <div id="main">
-      <svg id="viewport" viewBox="0 0 300 100" width="300" height="300"></svg>
-
-      <div id="navigation">
-        <button>&lt;</button>
-        <button>1</button>
-        <button>2</button>
-        <button>3</button>
-        <button>4</button>
-        <button>5</button>
-        <button>&gt;</button>
-      </div>
+    <div id="navigation">
+      <button onclick="navigateBackward()">&lt;</button>
+      <button onclick="renderStep1()">1</button>
+      <button onclick="renderStep2()">2</button>
+      <button onclick="renderMainBarplot()">3</button>
+      <button onclick="renderTreeMapExplorer()">4</button>
+      <button onclick="navigateForward()">&gt;</button>
+      <button onclick="reset()">Reset</button>
     </div>
-
-    <!-- Split out javascript tags -->
-    <script src="./index.js" async defer></script>
-    <script src="./rendering.js"> async</script>
-    <script src="./state.js" async></script>
-    <script src="./data.js" async></script>
+    <div id="main"></div>
 
     <!-- Libraries used -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.independent.min.js" integrity="sha512-89IU2quof1oR2mYXl38GkyY7HQFyHtzubPPEP7DlLNAkO6FH/3AHByuHAfi0zvLP4hMtggXASW9gFzQEYn8rWg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://unpkg.com/topojson-client@3"></script>
+
+    <!-- Split out javascript tag for data-->
+    <script src="./data.js"></script>
+    <script src="./index.js" defer></script>
   </body>
 
 </html>
