@@ -1,14 +1,14 @@
 Name,Bin,Year Published,Users Rated,Owned Users,Complexity Average,Mechanics
-Senet,"[-3500, 0)",-3500.0,664,1343.0,1.48,"Dice Rolling, Roll / Spin and Move"
-Backgammon,"[-3500, 0)",-3000.0,11680,17747.0,2.02,"Advantage Token, Betting and Bluffing, Dice Rolling, Roll / Spin and Move, Track Movement"
-Marbles,"[-3500, 0)",-3000.0,473,399.0,1.1,Flicking
-The Royal Game of Ur,"[-3500, 0)",-2600.0,549,1162.0,1.31,"Dice Rolling, Roll / Spin and Move, Square Grid, Static Capture"
-Go,"[-3500, 0)",-2200.0,14843,20398.0,4.0,"Enclosure, Square Grid"
-Nine Men's Morris,"[-3500, 0)",-1400.0,1310,1642.0,1.84,"Pattern Building, Point to Point Movement"
-Three Men's Morris,"[-3500, 0)",-1400.0,60,60.0,1.25,"Pattern Building, Point to Point Movement"
-Tic-Tac-Toe,"[-3500, 0)",-1300.0,3275,1374.0,1.16,"Paper-and-Pencil, Pattern Building"
-Chutes and Ladders,"[-3500, 0)",-200.0,3783,4400.0,1.02,"Dice Rolling, Grid Movement, Race, Roll / Spin and Move, Square Grid"
-Petteia,"[-3500, 0)",-100.0,51,93.0,2.17,"Action Queue, Area Majority / Influence"
+Senet,"[-3500, -2000)",-3500.0,664,1343.0,1.48,"Dice Rolling, Roll / Spin and Move"
+Backgammon,"[-3500, -2000)",-3000.0,11680,17747.0,2.02,"Advantage Token, Betting and Bluffing, Dice Rolling, Roll / Spin and Move, Track Movement"
+Marbles,"[-3500, -2000)",-3000.0,473,399.0,1.1,Flicking
+The Royal Game of Ur,"[-3500, -2000)",-2600.0,549,1162.0,1.31,"Dice Rolling, Roll / Spin and Move, Square Grid, Static Capture"
+Go,"[-3500, -2000)",-2200.0,14843,20398.0,4.0,"Enclosure, Square Grid"
+Nine Men's Morris,"[-2000, -1000)",-1400.0,1310,1642.0,1.84,"Pattern Building, Point to Point Movement"
+Three Men's Morris,"[-2000, -1000)",-1400.0,60,60.0,1.25,"Pattern Building, Point to Point Movement"
+Tic-Tac-Toe,"[-2000, -1000)",-1300.0,3275,1374.0,1.16,"Paper-and-Pencil, Pattern Building"
+Chutes and Ladders,"[-1000, 0)",-200.0,3783,4400.0,1.02,"Dice Rolling, Grid Movement, Race, Roll / Spin and Move, Square Grid"
+Petteia,"[-1000, 0)",-100.0,51,93.0,2.17,"Action Queue, Area Majority / Influence"
 Hnefatafl,"[0, 500)",400.0,1203,2448.0,2.55,"Grid Movement, Square Grid, Variable Player Powers"
 Pachisi,"[0, 500)",400.0,4476,7349.0,1.21,"Dice Rolling, Race, Roll / Spin and Move, Static Capture, Team-Based Game"
 Yut Nori,"[500, 1000)",500.0,105,209.0,1.33,Roll / Spin and Move

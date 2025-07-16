@@ -12,7 +12,7 @@ def generateStep1(df):
   # bin to be grouped
   s1 = s1.sort_values('Year Published')
 
-  bins = pd.IntervalIndex.from_breaks([-3500, 0, 500, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800], closed="left")
+  bins = pd.IntervalIndex.from_breaks([-3500, -2000, -1000, 0, 500, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800], closed="left")
   s1['Bin'] = pd.cut(s1['Year Published'], bins=bins)
 
   return s1[[
@@ -37,7 +37,7 @@ def generateStep2(df):
   # bin to be grouped
   s2 = s2.sort_values('Year Published')
 
-  bins = pd.IntervalIndex.from_breaks([-3500, 0, 500, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800], closed="left")
+  bins = pd.IntervalIndex.from_breaks([-3500, -2000, 0, 1000, 1500, 1750, 1800], closed="left")
   bins = bins.union(pd.interval_range(1800, 1900, freq=25, closed='left'))
   bins = bins.union(pd.interval_range(1900, 2000, freq=5, closed='left'))
   s2['Bin'] = pd.cut(s2['Year Published'], bins=bins)
