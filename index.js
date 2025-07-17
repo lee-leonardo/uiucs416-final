@@ -191,10 +191,8 @@ function renderComplexBarPlot(data, x, y, mode) {
  */
 function renderStep1() {
   // Table data, but we will map to a simpler data structure for the bar plot
-  const barData = groupBarData(0)
-  const { groups } = barData;
-  const mapped = mapSimpleData(groups);
-  const { data, maxCount } = mapped;
+  const { groups } = groupBarData(0)
+  const { data, maxCount } = mapSimpleData(groups);
 
   // scales
   const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
@@ -211,10 +209,8 @@ function renderStep1() {
  */
 function renderStep2() {
   // Table data, but we will map to a simpler data structure for the bar plot
-  const barData = groupBarData(1)
-  const { groups } = barData;
-  const mapped = mapSimpleData(groups);
-  const { data } = mapped;
+  const { groups } = groupBarData(1)
+  const { data, maxCount } = mapSimpleData(groups);
 
   // scales
   const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
