@@ -4,11 +4,12 @@
 const HEIGHT = 400;
 const WIDTH = 600;
 const MARGIN = {
-  top: 20,
-  right: 20,
-  bottom: 20,
-  left: 20
+  top: 100,
+  right: 100,
+  bottom: 100,
+  left: 100
 };
+const DURATION = 500;
 
 /**
  * Data Map
@@ -76,6 +77,83 @@ function getYAxis() {
  * Render
  * -------------------
  */
+
+/**
+ *
+ */
+function renderYAxis(data, y, label) {
+  getYAxis()
+    .attr("transform", `translate(100, 0)`)
+    .call(d3.axisLeft(y))
+
+  return {
+    y
+  }
+}
+
+function renderXAxis(data, x, label) {
+  getXAxis()
+    .attr("transform", `translate(0, ${HEIGHT - 100})`)
+    .call(d3.axisBottom(x).tickFormat(formatRange))//.tickSizeOuter(0))
+    .selectAll("text")
+    .attr("transform", "rotate(-45)")
+    .style("text-anchor", "end");
+
+  return {
+    x
+  }
+}
+
+/**
+ * Follows the old pattern
+ */
+function renderBarPlots(data, x, y) {
+  let bars = getSvg()
+    .selectAll(".bar")
+    .data(data, d => d);
+
+  // enter (prepare bars)
+  bars = bars.enter()
+    .append('rect')
+    .attr("class", "bar")
+    .attr('x', d => x(d.bin))
+    .attr('width', x.bandwidth())
+    // TODO transition this to use margin?
+    .attr('y', d => HEIGHT - 100)
+    .attr('height', _ => 0)
+    // TODO move these to styles?
+    .attr("fill", "#4A90E2")
+    .attr("stroke", "#357ABD")
+    .attr("stroke-width", 1);
+
+  // transition to update and display
+  bars.transition()
+    .duration(DURATION)
+    .ease(d3.easeExpIn)
+    .attr("y", function (d) { return y(d.count); })
+    // TODO transition this to use margin?
+    .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+    .delay(function (d, i) { return (i * 50) });
+
+  // exit to remove unused bars
+  bars.exit().transition()
+    .duration(DURATION)
+    .ease(d3.easeCircleOut)
+    .attr("height", 0)
+    .attr("y", 200)
+    .remove();
+
+  return {
+    bars,
+    x,
+    y
+  }
+}
+
+function renderComplexBarPlot(data, x, y, mode) {
+
+}
+
 /**
  * Rendering code references:
  * https://d3-graph-gallery.com/graph/barplot_stacked_basicWide.html
@@ -102,47 +180,12 @@ function renderStep1() {
   }
   maxCount = Math.round(maxCount / 10) * 10
 
-  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH-100])
+  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
-  // x axis
-  getXAxis()
-    .attr("transform", `translate(0, ${HEIGHT-100})`)
-    .call(d3.axisBottom(x).tickFormat(formatRange))//.tickSizeOuter(0))
-    .selectAll("text")
-      .attr("transform", "rotate(-45)")
-      .style("text-anchor", "end");
-
-  // y axis
-  getYAxis()
-    .attr("transform", `translate(100, 0)`)
-    .call(d3.axisLeft(y))
-
-  // labels
-
-
-  // create bar plots
-  getSvg()
-    .selectAll('.bar')
-    .data(data)
-    .enter()
-    .append('rect')
-    .attr('class', 'bar')
-    .attr('x', d => x(d.bin))
-    .attr('width', x.bandwidth())
-    .attr('y', d => HEIGHT - 100)
-    .attr('height', _ => 0)
-    // TODO figure out if I like this
-    .attr("fill", "#4A90E2")
-    .attr("stroke", "#357ABD")
-    .attr("stroke-width", 1)
-  // animate bar plots
-    .transition()
-      .duration(500)
-      .ease(d3.easeElastic) // Bouncy easing
-      .attr("y", function (d) { return y(d.count); })
-      .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
-      .delay(function (d, i) { return (i * 50) })
+  renderXAxis(data, x);
+  renderYAxis(data, y)
+  renderBarPlots(data, x, y);
 }
 
 /**
@@ -212,10 +255,9 @@ function navigateRender() {
 }
 
 function reset() {
-  clear();
+  page = 0;
   renderStep1();
 }
-
 
 /**
  * Life Cycle
