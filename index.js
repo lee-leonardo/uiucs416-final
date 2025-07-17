@@ -139,38 +139,42 @@ function renderXAxis(x, label) {
 function renderBarPlots(data, x, y) {
   let bars = getSvg()
     .selectAll(".bar")
-    .data(data, d => d);
-
-  // enter (prepare bars)
-  bars = bars.enter()
-    .append('rect')
-    .attr("class", "bar")
-    .attr('x', d => x(d.bin))
-    .attr('width', x.bandwidth())
-    // TODO transition this to use margin?
-    .attr('y', d => HEIGHT - 100)
-    .attr('height', _ => 0)
-    // TODO move these to styles?
-    .attr("fill", "#4A90E2")
-    .attr("stroke", "#357ABD")
-    .attr("stroke-width", 1);
-
-  // transition to update and display
-  bars.transition()
-    .duration(DURATION)
-    .ease(d3.easeExpIn)
-    .attr("y", function (d) { return y(d.count); })
-    // TODO transition this to use margin?
-    .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
-    .delay(function (d, i) { return (i * 50) });
-
-  // exit to remove unused bars
-  bars.exit().transition()
-    .duration(DURATION)
-    .ease(d3.easeCircleOut)
-    .attr("height", 0)
-    .attr("y", 200)
-    .remove();
+    .data(data, d => d.bin)
+    .join(
+      enter => enter.append('rect')
+        .attr("class", "bar")
+        .attr('x', d => x(d.bin))
+        .attr('width', x.bandwidth())
+        // TODO transition this to use margin?
+        .attr('y', d => HEIGHT - 100)
+        .attr('height', _ => 0)
+        // TODO move these to styles?
+        .attr("fill", "#4A90E2")
+        .attr("stroke", "#357ABD")
+        .attr("stroke-width", 1)
+        // animate the new elements added
+        .transition()
+          .duration(DURATION)
+          .ease(d3.easeExpIn)
+          .attr("y", function (d) { return y(d.count); })
+          // TODO transition this to use margin?
+          .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+          .delay(function (d, i) { return (i * 50) }
+      ),
+      update => update.transition()
+        .duration(DURATION)
+        .ease(d3.easeExpIn)
+        .attr("y", function (d) { return y(d.count); })
+        // TODO transition this to use margin?
+        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .delay(function (d, i) { return (i * 50) }),
+      exit => exit.transition()
+        .duration(DURATION)
+        .ease(d3.easeCircleOut)
+        .attr("height", 0)
+        .attr("y", HEIGHT - 100)
+        .remove()
+    );
 
   return {
     bars,
@@ -200,8 +204,8 @@ function renderStep1() {
 
   // trigger renders
   renderXAxis(x);
-  renderYAxis(y)
-  renderBarPlots(data, x, y);
+  renderYAxis(y);
+  return renderBarPlots(data, x, y);
 }
 
 /**
@@ -218,15 +222,26 @@ function renderStep2() {
 
   // trigger renders
   renderXAxis(x);
-  renderYAxis(y)
-  renderBarPlots(data, x, y);
+  renderYAxis(y);
+  return renderBarPlots(data, x, y);
 }
 
 /**
  * Data from -3500BCE to 2021CE
  */
 function renderMainBarplot() {
+  // Table data, but we will map to a simpler data structure for the bar plot
+  const { groups } = groupBarData(1)
+  const { data, maxCount } = mapSimpleData(groups);
 
+  // scales
+  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
+  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
+
+  // trigger renders
+  renderXAxis(x);
+  renderYAxis(y);
+  return renderComplexBarPlot(data, x, y);
 }
 
 /**
@@ -273,7 +288,7 @@ function navigateRender() {
 
 function reset() {
   page = 0;
-  renderStep1();
+  return renderStep1();
 }
 
 /**
