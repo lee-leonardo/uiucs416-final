@@ -91,7 +91,7 @@ function getXAxis() {
 
 function getYAxis() {
   if (getSvg().select('#y-axis').nodes().length) {
-    return getSvg().select('yx-axis');
+    return getSvg().select('#y-axis');
   }
 
   return getSvg().append("g")
@@ -231,17 +231,55 @@ function renderStep2() {
  */
 function renderMainBarplot() {
   // Table data, but we will map to a simpler data structure for the bar plot
-  const { groups } = groupBarData(1)
-  const { data, maxCount } = mapSimpleData(groups);
+  const table = get(2);
+  // const groups = d3.group(table, d => d["Year Published"]);
+
+  // Use year range to create bins
+  const yearRange = d3.extent(table, d => Number(d["Year Published"]))
+  const customYearBins = d3.bins().value(mainBarPlotBinningCallback)(table);
 
   // scales
-  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
+  // const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
+
+  // TODO add control of stack to enable more kinds of column searches
+  let subgroups = data.columns[0]; //TODO find index of
+  const stackedData = d3.stack().keys(subgroups)(data)
 
   // trigger renders
   renderXAxis(x);
   renderYAxis(y);
-  return renderComplexBarPlot(data, x, y);
+  return renderComplexBarPlot(stackedData, x, y);
+}
+
+function mainBarPlotBinningCallback(datum) {
+  const year = Number(datum['YearPublished']);
+
+  if (year < 1970) {
+    return "[-3500, 1970)"
+  }
+
+  // by 10 years
+  // 1980
+  // 1990
+
+  // by 5 years
+  // 1995
+  // 2000
+  // 2005
+  // 2010
+  // 2015
+
+  // by year
+  // 2016
+  // 2017
+  // 2018
+  // 2019
+  // 2020
+
+  return `${year}`;
+
+
 }
 
 /**
