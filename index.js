@@ -33,6 +33,30 @@ function generateCategoryKey() {
 }
 
 /**
+ * Data Helpers
+ */
+
+/**
+ * @returns {{ data: Array<{ bin: string, count: number }>, count: number }}
+ */
+function mapSimpleData(groups) {
+  let maxCount = -1;
+  for (const key of groups.keys()) {
+    if (groups.get(key).length > maxCount) maxCount = groups.get(key).length;
+
+    data.push({
+      bin: key,
+      count: groups.get(key).length
+    });
+  }
+
+  return {
+    data,
+    maxCount: Math.round(maxCount / 10) * 10
+  };
+}
+
+/**
  * Syntax helpers
  */
 function formatRange(range) {
@@ -81,9 +105,11 @@ function getYAxis() {
 /**
  *
  */
-function renderYAxis(data, y, label) {
+function renderYAxis(y, label) {
   getYAxis()
     .attr("transform", `translate(100, 0)`)
+    .transition()
+    .delay(DURATION)
     .call(d3.axisLeft(y))
 
   return {
@@ -91,9 +117,11 @@ function renderYAxis(data, y, label) {
   }
 }
 
-function renderXAxis(data, x, label) {
+function renderXAxis(x, label) {
   getXAxis()
     .attr("transform", `translate(0, ${HEIGHT - 100})`)
+    .transition()
+    .delay(DURATION)
     .call(d3.axisBottom(x).tickFormat(formatRange))//.tickSizeOuter(0))
     .selectAll("text")
     .attr("transform", "rotate(-45)")
@@ -183,8 +211,9 @@ function renderStep1() {
   const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
-  renderXAxis(data, x);
-  renderYAxis(data, y)
+  // trigger renders
+  renderXAxis(x);
+  renderYAxis(y)
   renderBarPlots(data, x, y);
 }
 
