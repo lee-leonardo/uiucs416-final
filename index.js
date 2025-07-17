@@ -40,18 +40,19 @@ function generateCategoryKey() {
  * @returns {{ data: Array<{ bin: string, count: number }>, count: number }}
  */
 function mapSimpleData(groups) {
+  let output = [];
   let maxCount = -1;
   for (const key of groups.keys()) {
     if (groups.get(key).length > maxCount) maxCount = groups.get(key).length;
 
-    data.push({
+    output.push({
       bin: key,
       count: groups.get(key).length
     });
   }
 
   return {
-    data,
+    data: output,
     maxCount: Math.round(maxCount / 10) * 10
   };
 }
@@ -190,24 +191,12 @@ function renderComplexBarPlot(data, x, y, mode) {
  */
 function renderStep1() {
   // Table data, but we will map to a simpler data structure for the bar plot
-  const { groups } = groupBarData(0)
+  const barData = groupBarData(0)
+  const { groups } = barData;
+  const mapped = mapSimpleData(groups);
+  const { data, maxCount } = mapped;
 
-  /**
-   * @type {Array<{ bin: string, count: number }>}
-   */
-  const data = [];
-
-  let maxCount = -1;
-  for (const key of groups.keys()) {
-    if (groups.get(key).length > maxCount) maxCount = groups.get(key).length;
-
-    data.push({
-      bin: key,
-      count: groups.get(key).length
-    });
-  }
-  maxCount = Math.round(maxCount / 10) * 10
-
+  // scales
   const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
@@ -221,7 +210,20 @@ function renderStep1() {
 * Data from -3500BCE to 2000CE
  */
 function renderStep2() {
+  // Table data, but we will map to a simpler data structure for the bar plot
+  const barData = groupBarData(1)
+  const { groups } = barData;
+  const mapped = mapSimpleData(groups);
+  const { data } = mapped;
 
+  // scales
+  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
+  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
+
+  // trigger renders
+  renderXAxis(x);
+  renderYAxis(y)
+  renderBarPlots(data, x, y);
 }
 
 /**
@@ -244,14 +246,8 @@ function renderTreeMapExplorer() {
  */
 let page = 0;
 
-function clearEvents() {
-
-}
-
 function navigateBackward() {
   if (page === 0) return;
-
-  console.log('navigate backwards', page)
 
   page--;
   navigateRender();
@@ -260,25 +256,21 @@ function navigateBackward() {
 function navigateForward() {
   if (page === data.length) return;
 
-  console.log('navigate forwards', page)
-
   page++;
   navigateRender();
 }
 
 function navigateRender() {
-  clearEvents();
-
-  if (page === 1) {
+  if (page === 0) {
     return renderStep1()
   }
-  if (page == 2) {
+  if (page == 1) {
     return renderStep2()
   }
-  if (page == 3) {
+  if (page == 2) {
     return renderMainBarplot()
   }
-  if (page == 4) {
+  if (page == 3) {
     return renderTreeMapExplorer()
   }
 }
@@ -300,7 +292,6 @@ function reset() {
  * Main
  */
 async function startScripts() {
-  console.log('init');
   await initData();
   getSvg();
 
