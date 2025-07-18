@@ -11,6 +11,10 @@ const MARGIN = {
 };
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
+const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40, two colors with high compat with all kinds of color blindness.
+
+// set to 11 bins to support the coloration
+const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2015, 2018, 2019, 2020];
 
 /**
  * Data Map
@@ -61,7 +65,11 @@ function mapSimpleData(groups) {
 /**
  * Syntax helpers
  */
-function formatRange(range) {
+function formatExtentToBin(extent) {
+  return `[${extent[0]}, ${extent[1]})`;
+}
+
+function formatYearRangeToLabel(range) {
   return range.slice(1, -1).replace(', ', ' to ');
 }
 
@@ -124,7 +132,7 @@ function renderXAxis(x, label) {
     .attr("transform", `translate(0, ${HEIGHT - 100})`)
     .transition()
     .delay(DURATION)
-    .call(d3.axisBottom(x).tickFormat(formatRange))//.tickSizeOuter(0))
+    .call(d3.axisBottom(x).tickFormat(formatYearRangeToLabel))//.tickSizeOuter(0))
     .selectAll("text")
     .attr("transform", "rotate(-45)")
     .style("text-anchor", "end");
@@ -149,19 +157,19 @@ function renderBarPlots(data, x, y) {
         // TODO transition this to use margin?
         .attr('y', d => HEIGHT - 100)
         .attr('height', _ => 0)
-        // TODO move these to styles?
+        // TODO move these to styles? These will not work with stacks?
         .attr("fill", "#4A90E2")
         .attr("stroke", "#357ABD")
         .attr("stroke-width", 1)
         // animate the new elements added
         .transition()
-          .duration(DURATION)
-          .ease(d3.easeExpIn)
-          .attr("y", function (d) { return y(d.count); })
-          // TODO transition this to use margin?
-          .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
-          .delay(function (d, i) { return (i * 50) }
-      ),
+        .duration(DURATION)
+        .ease(d3.easeExpIn)
+        .attr("y", function (d) { return y(d.count); })
+        // TODO transition this to use margin?
+        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .delay(function (d, i) { return (i * 50) }
+        ),
       update => update.transition()
         .duration(DURATION)
         .ease(d3.easeExpIn)
@@ -184,9 +192,54 @@ function renderBarPlots(data, x, y) {
   }
 }
 
-function renderComplexBarPlot(data, x, y, mode) {
+function renderStackedBarPlot(data, x, y, color) {
+  let bars = getSvg()
+    .selectAll(".bar")
+    .data(data, d => d.bin)
+    .join(
+      enter => enter.append('rect')
+        .attr("class", "bar")
+        .attr('x', d => x(d.bin))
+        .attr('width', x.bandwidth())
+        // TODO transition this to use margin?
+        .attr('y', _ => HEIGHT - 100)
+        .attr('height', _ => 0)
+        // TODO move these to styles? These will not work with stacks?
+        .attr("fill", d => color(d.key))
+        .attr("stroke", "#000035")
+        .attr("stroke-width", 1)
+        // animate the new elements added
+        .transition()
+        .duration(DURATION)
+        .ease(d3.easeExpIn)
+        .attr("y", function (d) { return y(d.count); })
+        // TODO transition this to use margin?
+        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .delay(function (d, i) { return (i * 50) }),
+      update => update.transition()
+        .duration(DURATION)
+        .ease(d3.easeExpIn)
+        .attr("y", function (d) { return y(d.count); })
+        // TODO transition this to use margin?
+        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .delay(function (d, i) { return (i * 50) }),
+      exit => exit.transition()
+        .duration(DURATION)
+        .ease(d3.easeCircleOut)
+        .attr("height", 0)
+        .attr("y", HEIGHT - 100)
+        .remove()
+    );
 
+  return {
+    bars,
+    x,
+    y,
+    color
+  }
 }
+
+// TODO render barplot with multi dimensional modifications
 
 /**
  * Rendering code references:
@@ -228,77 +281,52 @@ function renderStep2() {
 }
 
 /**
- * Data from -3500BCE to 2021CE
+ * Data from -3500BCE to 2020CE
  */
-function renderMainBarplot() {
+function renderStackedBarplot() {
+  // TODO: Year Published, change this mode
+  // TODO:
+
   // Table data, but we will map to a simpler data structure for the bar plot
   const table = get(2);
-  // const groups = d3.group(table, d => d["Year Published"]);
 
   // Use year range to create bins
-  const yearRange = d3.extent(table, d => Number(d["Year Published"]))
-  const customYearBins = d3.bins().value(mainBarPlotBinningCallback)(table);
+  const customYearBins = d3.bin().domain(d3.extent(YEAR_THRESHOLDS)).thresholds(YEAR_THRESHOLDS).value(d => Number(d['Year Published']))
 
   // scales
-  // const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
-  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
+  let x = d3.scaleBand().domain(bins.map(d => formatExtentToBin([d.x0, d.x1]))).range([100, WIDTH - 100])
+  let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
   // TODO add control of stack to enable more kinds of column searches
-  let subgroups = data.columns[0]; //TODO find index of
-  const stackedData = d3.stack().keys(subgroups)(data)
+
+  // TODO is this the mode?
+  let selectedColumn = table.columns.indexOf('');
+  let subgroups = table.columns[selectedColumn];
+
+
+  // color palette = one color per subgroup
+  let color = d3.scaleOrdinal()
+    .domain(subgroups)
+    .range(COLOR_PALETTE)
+  // TODO class?
+
+  let stackedData = d3.stack().keys(subgroups)(data);
+  let bars;
 
   // trigger renders
   renderXAxis(x);
   renderYAxis(y);
-  return renderComplexBarPlot(stackedData, x, y);
+  ({ bars, x, y, color } = renderStackedBarPlot(stackedData, x, y, color));
+
+  return {
+    bars,
+    x,
+    y,
+    color,
+  };
 }
 
-function mainBarPlotBinningCallback(datum) {
-  const year = Number(datum['YearPublished']);
-
-  // before 1970
-  if (year < 1970) {
-    return "[-3500, 1970)"
-  }
-
-  // by 10 years
-  if (year < 1980) {
-    return "[1970, 1980)"
-  }
-
-  if (year < 1990) {
-    return "[1980, 1990)"
-  }
-
-  // by 10 years
-  if (year < 1995) {
-    return "[1990, 1995)"
-  }
-
-  if (year < 2000) {
-    return "[1995, 2000)"
-  }
-
-  if (year < 2005) {
-    return "[2000, 2005)"
-  }
-
-  if (year < 2010) {
-    return "[2005, 2010)"
-  }
-
-  if (year < 2015) {
-    return "[2010, 2015)"
-  }
-
-  // per year
-  return year ? `${year}` : null;
-}
-
-/**
- * TODO:
- */
-function renderTreeMapExplorer() {
+function renderMultiBarplot() {
 
 }
 
@@ -330,10 +358,10 @@ function navigateRender() {
     return renderStep2()
   }
   if (page == 2) {
-    return renderMainBarplot()
+    return renderStackedBarplot()
   }
   if (page == 3) {
-    return renderTreeMapExplorer()
+    return renderMultiBarplot()
   }
 }
 
