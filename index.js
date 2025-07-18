@@ -127,6 +127,9 @@ function renderYAxis(y, label) {
   }
 }
 
+/**
+ *
+ */
 function renderXAxis(x, label) {
   getXAxis()
     .attr("transform", `translate(0, ${HEIGHT - 100})`)
@@ -283,26 +286,21 @@ function renderStep2() {
 /**
  * Data from -3500BCE to 2020CE
  */
-function renderStackedBarplot() {
-  // TODO: Year Published, change this mode
-  // TODO:
-
+function renderStep3() {
   // Table data, but we will map to a simpler data structure for the bar plot
   const table = get(2);
 
   // Use year range to create bins
   const customYearBins = d3.bin().domain(d3.extent(YEAR_THRESHOLDS)).thresholds(YEAR_THRESHOLDS).value(d => Number(d['Year Published']))
+  const binnedData = customYearBins(table);
+  const maxCount = binnedData.reduce((max, el) => max < el.length ? el.length : max, -1);
 
   // scales
-  let x = d3.scaleBand().domain(bins.map(d => formatExtentToBin([d.x0, d.x1]))).range([100, WIDTH - 100])
+  let x = d3.scaleBand().domain(binnedData.map(d => formatExtentToBin([d.x0, d.x1]))).range([100, WIDTH - 100])
   let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
-  // TODO add control of stack to enable more kinds of column searches
-
-  // TODO is this the mode?
-  let selectedColumn = table.columns.indexOf('');
+  let selectedColumn = table.columns.indexOf('Min Players');
   let subgroups = table.columns[selectedColumn];
-
 
   // color palette = one color per subgroup
   let color = d3.scaleOrdinal()
@@ -326,7 +324,7 @@ function renderStackedBarplot() {
   };
 }
 
-function renderMultiBarplot() {
+function renderFinal() {
 
 }
 
@@ -358,10 +356,10 @@ function navigateRender() {
     return renderStep2()
   }
   if (page == 2) {
-    return renderStackedBarplot()
+    return renderStep3()
   }
   if (page == 3) {
-    return renderMultiBarplot()
+    return renderFinal()
   }
 }
 
