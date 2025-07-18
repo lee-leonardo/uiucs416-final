@@ -10,6 +10,7 @@ const MARGIN = {
   left: 100
 };
 const DURATION = 500;
+const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
 
 /**
  * Data Map
@@ -255,31 +256,43 @@ function renderMainBarplot() {
 function mainBarPlotBinningCallback(datum) {
   const year = Number(datum['YearPublished']);
 
+  // before 1970
   if (year < 1970) {
     return "[-3500, 1970)"
   }
 
   // by 10 years
-  // 1980
-  // 1990
+  if (year < 1980) {
+    return "[1970, 1980)"
+  }
 
-  // by 5 years
-  // 1995
-  // 2000
-  // 2005
-  // 2010
-  // 2015
+  if (year < 1990) {
+    return "[1980, 1990)"
+  }
 
-  // by year
-  // 2016
-  // 2017
-  // 2018
-  // 2019
-  // 2020
+  // by 10 years
+  if (year < 1995) {
+    return "[1990, 1995)"
+  }
 
-  return `${year}`;
+  if (year < 2000) {
+    return "[1995, 2000)"
+  }
 
+  if (year < 2005) {
+    return "[2000, 2005)"
+  }
 
+  if (year < 2010) {
+    return "[2005, 2010)"
+  }
+
+  if (year < 2015) {
+    return "[2010, 2015)"
+  }
+
+  // per year
+  return year ? `${year}` : null;
 }
 
 /**
