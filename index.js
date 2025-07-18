@@ -14,7 +14,7 @@ const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/wor
 const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40, two colors with high compat with all kinds of color blindness.
 
 // set to 11 bins to support the coloration
-const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2015, 2018, 2019, 2020];
+const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 2015, 2016, 2017, 2018, 2019, 2020];
 
 /**
  * Data Map
@@ -66,6 +66,9 @@ function mapSimpleData(groups) {
  * Syntax helpers
  */
 function formatExtentToBin(extent) {
+  // No Range single item
+  if (extent[0] === extent[1]) return `[${extent[0]})`;
+
   return `[${extent[0]}, ${extent[1]})`;
 }
 
