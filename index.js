@@ -293,13 +293,34 @@ function renderStep3() {
   // Table data, but we will map to a simpler data structure for the bar plot
   const table = get(2);
 
-  // Use year range to create bins
-  const customYearBins = d3.bin().domain(d3.extent(YEAR_THRESHOLDS)).thresholds(YEAR_THRESHOLDS).value(d => Number(d['Year Published']))
-  const binnedData = customYearBins(table);
-  const maxCount = binnedData.reduce((max, el) => max < el.length ? el.length : max, -1);
+  // use thi
+  const yearRanges =  [
+    ...d3.pairs(YEAR_THRESHOLDS.slice(0, YEAR_THRESHOLDS.indexOf(2025))),
+    ...d3.range(2016, 2021).map(el => [el, el])
+  ];
+  const yearKeys = yearRanges.map(formatExtentToBin);
+
+  const yearBinGroup = d3.group(table, d => {
+    const groupId = yearRanges.findIndex(([min, max]) => {
+      const year = Number(d['Year Published']);
+      return year >= min && (year < max || min == max)
+    });
+    return yearKeys[groupId];
+  })
+
+  // Take the bins here and iterate through each one to generate the stack within them?
+  const stackedDataArr = Array.from(yearBinGroup).map(el => {
+    const stacked = d3.stack().keys(['Min Age'])(el[1]);
+    // Stack internally for each of the bins, this then is porportional to the aggregate by way of the max of all the maxes
+    return [el[0], stacked]
+  });
+  const stackedData = new d3.InternMap(stackedDataArr);
+
+  // Get the max of all the maxes
+  const maxCount = d3.max(m.map(el => d3.max(el[1][0], d => d[1])))
 
   // scales
-  let x = d3.scaleBand().domain(binnedData.map(d => formatExtentToBin([d.x0, d.x1]))).range([100, WIDTH - 100])
+  let x = d3.scaleBand().domain(yearKeys).range([100, WIDTH - 100])
   let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
   let selectedColumn = table.columns.indexOf('Min Players');
@@ -309,9 +330,10 @@ function renderStep3() {
   let color = d3.scaleOrdinal()
     .domain(subgroups)
     .range(COLOR_PALETTE)
-  // TODO class?
+    .unknown('#ccc')
 
-  let stackedData = d3.stack().keys(subgroups)(data);
+  // TODO class this stack data is not working with the logic
+  // TODO map to simpler object before doing the below
   let bars;
 
   // trigger renders
