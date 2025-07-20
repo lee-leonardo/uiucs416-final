@@ -16,6 +16,16 @@ const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogi
 // set to 11 bins to support the coloration
 const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 2015, 2016, 2017, 2018, 2019, 2020];
 
+
+// ID, Name, Year Published, Min Players, Max Players, Play Time, Min Age, Users Rated, Rating Average, BGG Rank, Complexity Average, Owned Users, Mechanics, Domains
+
+/**
+ * @typedef {{ ID: string, Name: string; "Year Published": string, "Min Players": string, "Max Players": string, "Play Time": string, "Min Age": string, "Users Rated": string, "Rating Average": string, "BGG Rank": string, "Complexity Average": string, "Owned Users": string, "Mechanics": string, "Domains": string }} RawDataRow
+ */
+/**
+ * @typedef {{ID: string, Name: string; "Year Published": string, "Min Players": string, "Max Players": string, "Play Time": string, "Min Age": string, "Users Rated": string, "Rating Average": string, "BGG Rank": string, "Complexity Average": string, "Owned Users": string, "Mechanics": string, "Domains": string, yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number }} CsvDataRow
+ */
+
 /**
  * Data Map
  */
@@ -60,6 +70,28 @@ function mapSimpleData(groups) {
     data: output,
     maxCount: Math.round(maxCount / 10) * 10
   };
+}
+
+/**
+ * CSV assumes strings, converts all the numerical data to numbers for usage.
+ * @param {RawDataRow} rawData
+ * @param {number} index
+ * @returns {CsvDataRow} the mapped object from the data provided
+ */
+function mapRawData(row, i) {
+  return {
+    ...row,
+    id: Number(row['ID']),
+    yearPublished: Number(row['Year Published']),
+    minPlayers: Number(row['Min Players']),
+    maxPlayers: Number(row['Max Players']),
+    playTime: Number(row['Play Time']),
+    minAge: Number(row['Min Age']),
+    usersRated: Number(row['Rating Average']),
+    bggRank: Number(row['BGG Rank']),
+    complexityAverage: Number(row['Complexity Average']),
+    ownedUsers: Number(row['Owned Users'])
+  }
 }
 
 /**
@@ -291,22 +323,40 @@ function renderStep2() {
  */
 function renderStep3() {
   // Table data, but we will map to a simpler data structure for the bar plot
-  const table = get(2);
+  /** @type {CsvDataRow[]} */
+  const table = get(2).map(mapRawData);
 
   // use thi
   const yearRanges =  [
-    ...d3.pairs(YEAR_THRESHOLDS.slice(0, YEAR_THRESHOLDS.indexOf(2025))),
+    ...d3.pairs(YEAR_THRESHOLDS.slice(0, YEAR_THRESHOLDS.indexOf(2015))),
     ...d3.range(2016, 2021).map(el => [el, el])
   ];
   const yearKeys = yearRanges.map(formatExtentToBin);
 
-  const yearBinGroup = d3.group(table, d => {
+  const yearRangeBins = d3.group(table, d => {
     const groupId = yearRanges.findIndex(([min, max]) => {
       const year = Number(d['Year Published']);
       return year >= min && (year < max || min == max)
     });
     return yearKeys[groupId];
   })
+
+  // TODO can I remap them here?
+  const yearRangeBinStats = d3.rollup(yearRangeBins, g => g.length, d => yearRanges.findIndex(([min, max]) => {
+    const year = Number(d['Year Published']);
+    return year >= min && (year < max || min == max)
+  }));
+
+  /**
+   * Data points to capture:
+   * - year range
+   * - each min player and
+   */
+
+
+  // TODO give up on this approach, just map out the entries in such a way that the binning is data that is already premapped.
+
+
 
   // Take the bins here and iterate through each one to generate the stack within them?
   const stackedDataArr = Array.from(yearBinGroup).map(el => {
