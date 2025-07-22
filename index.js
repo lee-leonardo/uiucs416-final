@@ -23,7 +23,10 @@ const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 
  * @typedef {{ ID: string, Name: string; "Year Published": string, "Min Players": string, "Max Players": string, "Play Time": string, "Min Age": string, "Users Rated": string, "Rating Average": string, "BGG Rank": string, "Complexity Average": string, "Owned Users": string, "Mechanics": string, "Domains": string }} RawDataRow
  */
 /**
- * @typedef {{ID: string, Name: string; "Year Published": string, "Min Players": string, "Max Players": string, "Play Time": string, "Min Age": string, "Users Rated": string, "Rating Average": string, "BGG Rank": string, "Complexity Average": string, "Owned Users": string, "Mechanics": string, "Domains": string, yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number }} CsvDataRow
+ * @typedef {RawDataRow & { yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number }} CsvDataRow
+ */
+/**
+ * @typedef {CsvDataRow & { '' : number }} DateRangeStatistics
  */
 
 /**
@@ -91,6 +94,29 @@ function mapRawData(row, i) {
     bggRank: Number(row['BGG Rank']),
     complexityAverage: Number(row['Complexity Average']),
     ownedUsers: Number(row['Owned Users'])
+  }
+}
+
+/**
+ * @function mapRawDataForDateRanges
+ * @param {[string, CsvDataRow[]]} groupKv - an array representation of a map entry
+ * @param {number} index
+ * @returns {DateRangeStatistics}
+ */
+function mapRawDataForDateRangesWithMinPlayers([key, entries], i) {
+  return {
+    key,
+    entries,
+    entriesCount: entries.length,
+    // bin values which take the form of minAgeCount_1, collects separated versions of the min age count
+    ...entries.reduce((acc, el) => {
+      const key = `minPlayersCount_${el.minPlayers}`;
+
+      if (!acc[key]) acc[key] = 1
+      acc[key]++;
+
+      return acc;
+    }, {})
   }
 }
 
@@ -231,33 +257,46 @@ function renderBarPlots(data, x, y) {
 }
 
 function renderStackedBarPlot(data, x, y, color) {
+  console.log('stacked data: ', data)
+
+  // TODO need to solve the parsing throught the stacked data structure
+  // TODO these are the portions that will help with the data
+  // .attr("x", function (d) { return x(d.data.group); })
+  // .attr("y", function (d) { return y(d[1]); })
+  // .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+
+  // d3.stack().keys(get(2).columns).value(([, group], key) => group.get(key).length)(d3.index(data, d => d['Year Published']))
+
   let bars = getSvg()
     .selectAll(".bar")
-    .data(data, d => d.bin)
+    .data(data, d => d.data.key)
     .join(
       enter => enter.append('rect')
         .attr("class", "bar")
-        .attr('x', d => x(d.bin))
+        // .attr('x', d => x(d.bin))
+        // TODO this data.group is the access of the column thus we want to change this to search for the range
+        .attr("x", function (d, i) { return x(d[i].data.key); }) // TODO map this correctly to the positional value, I think it's key still
         .attr('width', x.bandwidth())
         // TODO transition this to use margin?
         .attr('y', _ => HEIGHT - 100)
         .attr('height', _ => 0)
         // TODO move these to styles? These will not work with stacks?
-        .attr("fill", d => color(d.key))
+        .attr("fill", d => color(d.key)) // TODO this needs to change to the correct value
         .attr("stroke", "#000035")
         .attr("stroke-width", 1)
         // animate the new elements added
         .transition()
         .duration(DURATION)
         .ease(d3.easeExpIn)
-        .attr("y", function (d) { return y(d.count); })
+        // .attr("y", function (d) { return y(d.count); })
+        .attr("y", function (d) { return y(d[0]); }) // TODO map this correctly to the positional value // TODO should probably be using d[0] only
         // TODO transition this to use margin?
-        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .attr("height", _ => 0) //return y(d[0]) - y(d[1])
         .delay(function (d, i) { return (i * 50) }),
       update => update.transition()
         .duration(DURATION)
         .ease(d3.easeExpIn)
-        .attr("y", function (d) { return y(d.count); })
+        .attr("y", function (d) { return y(d[0]) - y(d[1]); }) //TODO should be d[1] - d[0] ish
         // TODO transition this to use margin?
         .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
         .delay(function (d, i) { return (i * 50) }),
@@ -327,69 +366,65 @@ function renderStep3() {
   const table = get(2).map(mapRawData);
 
   // use thi
-  const yearRanges =  [
+  const yearRanges = [
     ...d3.pairs(YEAR_THRESHOLDS.slice(0, YEAR_THRESHOLDS.indexOf(2015))),
-    ...d3.range(2016, 2021).map(el => [el, el])
+    ...d3.range(2014, 2021).map(el => [el, el])
   ];
   const yearKeys = yearRanges.map(formatExtentToBin);
 
   const yearRangeBins = d3.group(table, d => {
     const groupId = yearRanges.findIndex(([min, max]) => {
-      const year = Number(d['Year Published']);
-      return year >= min && (year < max || min == max)
+      const year = d.yearPublished;
+
+      if (min == max && year == min) return true;
+
+      return year >= min && year < max
     });
     return yearKeys[groupId];
   })
 
-  // TODO can I remap them here?
-  const yearRangeBinStats = d3.rollup(yearRangeBins, g => g.length, d => yearRanges.findIndex(([min, max]) => {
-    const year = Number(d['Year Published']);
-    return year >= min && (year < max || min == max)
-  }));
+  // TODO this is not working as expected, need to probably do a custom map instead of rollup.
+  // const yearRangeBinStats = Array.from(yearRangeBins).map()
 
-  /**
-   * Data points to capture:
-   * - year range
-   * - each min player and
-   */
+  // Format bins with stats custom for this stacking
+  /** @type {DateRangeStatistics[]} */
+  const yearRangeBinStats = Array.from(yearRangeBins).filter(([key,]) => key).map(mapRawDataForDateRangesWithMinPlayers);
+  // Keys for all the min players keys
+  const minPlayerStackKeys = Array.from(new Set(...yearRangeBinStats.map(Object.keys))).filter(el => el !== 'key' && el !== 'entries' && el !== 'entriesCount')
+  minPlayerStackKeys.sort((a, b) => Number(a.split('_')[1]) - Number(b.split('_')[1])); // sort keys for correct stack alignment
 
+  // TODO I can set the values that don't exist from  NaN/undefined to 0. Or filter out the values?
 
-  // TODO give up on this approach, just map out the entries in such a way that the binning is data that is already premapped.
-
-
-
-  // Take the bins here and iterate through each one to generate the stack within them?
-  const stackedDataArr = Array.from(yearBinGroup).map(el => {
-    const stacked = d3.stack().keys(['Min Age'])(el[1]);
-    // Stack internally for each of the bins, this then is porportional to the aggregate by way of the max of all the maxes
-    return [el[0], stacked]
+  // Stacked data based on bin stats and the keys
+  const stackedData = d3.stack().keys(minPlayerStackKeys)(yearRangeBinStats).map(row => {
+    return row.map(el => {
+      if (Number.isNaN(el[0])) el[0] = 0;
+      if (Number.isNaN(el[1])) el[1] = el[0];
+      return el;
+    })
   });
-  const stackedData = new d3.InternMap(stackedDataArr);
 
   // Get the max of all the maxes
-  const maxCount = d3.max(m.map(el => d3.max(el[1][0], d => d[1])))
+  const maxCount = Math.ceil(d3.max(yearRangeBinStats.map(el => el.entriesCount)) / 10) * 10; // TODO wait we need to get the max y in this case I might need to make this a different value
 
   // scales
   let x = d3.scaleBand().domain(yearKeys).range([100, WIDTH - 100])
   let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
 
-  let selectedColumn = table.columns.indexOf('Min Players');
-  let subgroups = table.columns[selectedColumn];
-
   // color palette = one color per subgroup
   let color = d3.scaleOrdinal()
-    .domain(subgroups)
+    .domain(minPlayerStackKeys) // colors correspond to the
     .range(COLOR_PALETTE)
     .unknown('#ccc')
 
-  // TODO class this stack data is not working with the logic
-  // TODO map to simpler object before doing the below
   let bars;
 
   // trigger renders
   renderXAxis(x);
   renderYAxis(y);
   ({ bars, x, y, color } = renderStackedBarPlot(stackedData, x, y, color));
+
+  // TODO NaN needs to be set to 0 or not rendered?
 
   return {
     bars,
@@ -399,7 +434,10 @@ function renderStep3() {
   };
 }
 
-function renderFinal() {
+/**
+ * Scatterplot to display data in a way with more pivotable characteristics.
+ */
+function renderFinalScatterplot() {
 
 }
 
@@ -434,7 +472,7 @@ function navigateRender() {
     return renderStep3()
   }
   if (page == 3) {
-    return renderFinal()
+    return renderFinalScatterplot()
   }
 }
 
