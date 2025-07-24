@@ -6,6 +6,7 @@
   </head>
   <body>
     <h1>The exponential growths of board games</h1>
+    <p>A series of visualizations that demonstrate the growth and diversification of the board game as a form of entertainment.</p>
     <div id="navigation" class="container">
       <button id="last" onclick="navigateBackward()">&lt;</button>
       <button id="step1" onclick="renderStep1()">1</button>
@@ -16,20 +17,68 @@
       <button id="reset "onclick="reset()">Reset</button>
     </div>
     <div id="main" class="container"></div>
-    <div id="controls" class="container hidden">
+    <!-- <div id="controls" class="container hidden"> -->
+    <div id="controls" class="container">
       <div id="axes" class="container">
         <span>Axes options: </span>
-        <select id="x-options" disabled></select>
-        <button id="axis-flip" disabled>flip</button>
-        <select id="y-options" disabled></select>
+        <select id="x-options" name="x-options">
+          <!-- Should be same as y-options -->
+          <option value="yearPublished" selected>Year Published</option>
+          <option value="bggRank">BGG Rank</option>
+          <option value="complexityAverage">Complexity Average</option>
+          <option value="minPlayers">Min Players</option>
+          <option value="maxPlayers">Max Players</option>
+          <option value="playTime">Play Time</option>
+          <option value="minAge">Min Age</option>
+          <option value="usersRated">Users Rated</option>
+          <option value="ratingAverage">Rating Average</option>
+          <option value="ownedUsers">Owned Users</option>
+
+        </select>
+        <button id="axis-flip" onclick="flipAxes()">flip</button>
+        <select id="y-options" name="y-options">
+          <!-- Should be same as x-options -->
+          <option value="ownedUsers" selected>Owned Users</option>
+          <option value="yearPublished">Year Published</option>
+          <option value="bggRank">BGG Rank</option>
+          <option value="complexityAverage">Complexity Average</option>
+          <option value="minPlayers">Min Players</option>
+          <option value="maxPlayers">Max Players</option>
+          <option value="playTime">Play Time</option>
+          <option value="minAge">Min Age</option>
+          <option value="usersRated">Users Rated</option>
+          <option value="ratingAverage">Rating Average</option>
+        </select>
       </div>
       <div id="quality" class="container">
         <span>Quality options: </span>
-        <select id="size-options" disabled></select>
-        <button id="quality-flip" disabled>flip</button>
-        <select id="color-options" disabled></select>
+        <select id="size-options" name="size-options">
+          <!-- Same as the x and y-options -->
+          <option value="ratingAverage" selected>Rating Average</option>
+          <option value="yearPublished">Year Published</option>
+          <option value="bggRank">BGG Rank</option>
+          <option value="complexityAverage">Complexity Average</option>
+          <option value="minPlayers">Min Players</option>
+          <option value="maxPlayers">Max Players</option>
+          <option value="playTime">Play Time</option>
+          <option value="minAge">Min Age</option>
+          <option value="usersRated">Users Rated</option>
+          <option value="ownedUsers">Owned Users</option>
+        </select>
+        <select id="color-options" onchange="selectChange()">
+          <option value="Mechanics" selected>Mechanics</option>
+          <option value="Domains">Domains</option>
+          <option value="complexityAverage">Complexity Average</option>
+          <option value="minPlayers">Min Players</option>
+          <option value="maxPlayers">Max Players</option>
+          <option value="minAge">Min Age</option>
+        </select>
       </div>
     </div>
+    <p id="desc1">Board games started off being a tool for learning and entertainment for the wealthy. Used to teach aspects of war or practice anticipating moves of opponents.</p>
+    <p id="desc2">As the middle class came into prominence on the world stage, their capital and free time lead to the acceleration of the development of games.</p>
+    <p id="desc3">This volume of different titles is coupled with the diversification of genres and game mechanics, which lends itself to a rich tapestry of ideas and ludemes.</p>
+    <p id="desc4">Lastly I leave you the reader an ability to play, as "Play is older than culture, for culture, however inadequately defined, always presupposes human society, and animals have not waited for man to teach them their playing." - Huizinga, Homo Ludens</p>
 
     <!-- Libraries used -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
