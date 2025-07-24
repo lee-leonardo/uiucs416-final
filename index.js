@@ -433,13 +433,13 @@ function reset() {
 }
 
 function updateStateFromPage() {
-  document.getElementById('last').disabled = !freeNav;
+  document.getElementById('last').disabled = !freeNav || page == 0;
   document.getElementById('next').disabled = page > 2;
 
   // force users to go forward on the path until completion.
   // Disable the steps when they are less than the
-  for (let i = 0; i < 3; i++) {
-    document.getElementById(`step${i + 1}`).disabled = i < page || freeNav;
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`step${i + 1}`).disabled = !freeNav && i < page;
 
     if (i < page || i > page) {
       document.getElementById(`desc${i + 1}`).classList.add('hidden');
@@ -448,7 +448,7 @@ function updateStateFromPage() {
     }
   }
 
-  if (page == 3 || freeNav) {
+  if (page == 3) {
     document.getElementById('controls').classList.remove('hidden')
     freeNav = true;
   } else {
