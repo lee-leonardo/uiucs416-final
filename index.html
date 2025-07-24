@@ -6,16 +6,30 @@
   </head>
   <body>
     <h1>The exponential growths of board games</h1>
-    <div id="navigation">
-      <button onclick="navigateBackward()">&lt;</button>
-      <button onclick="renderStep1()">1</button>
-      <button onclick="renderStep2()">2</button>
-      <button onclick="renderStep3()">3</button>
-      <button onclick="renderFinal()">4</button>
-      <button onclick="navigateForward()">&gt;</button>
-      <button onclick="reset()">Reset</button>
+    <div id="navigation" class="container">
+      <button id="last" onclick="navigateBackward()">&lt;</button>
+      <button id="step1" onclick="renderStep1()">1</button>
+      <button id="step2" onclick="renderStep2()">2</button>
+      <button id="step3" onclick="renderStep3()">3</button>
+      <button id="step4" onclick="renderFinalScatterplot()">4</button>
+      <button id="next" onclick="navigateForward()">&gt;</button>
+      <button id="reset "onclick="reset()">Reset</button>
     </div>
-    <div id="main"></div>
+    <div id="main" class="container"></div>
+    <div id="controls" class="container hidden">
+      <div id="axes" class="container">
+        <span>Axes options: </span>
+        <select id="x-options" disabled></select>
+        <button id="axis-flip" disabled>flip</button>
+        <select id="y-options" disabled></select>
+      </div>
+      <div id="quality" class="container">
+        <span>Quality options: </span>
+        <select id="size-options" disabled></select>
+        <button id="quality-flip" disabled>flip</button>
+        <select id="color-options" disabled></select>
+      </div>
+    </div>
 
     <!-- Libraries used -->
     <script src="https://d3js.org/d3.v7.min.js"></script>

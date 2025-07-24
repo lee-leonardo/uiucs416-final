@@ -1,11 +1,25 @@
+body {
+  max-width: 1000px;
+}
+
+span {
+  margin-right: 8px;
+}
+
 #navigation {
   margin: 8px;
 }
 
-#main {
-  background-color: blue;
+#main {}
+
+#viewport {}
+
+#controls {}
+
+.container {
+  margin: 8px;
 }
 
-#viewport {
-  background-color: gray;
+.hidden {
+  display: none;
 }
