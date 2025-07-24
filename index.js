@@ -1,13 +1,14 @@
 /**
  * @file This file is designed to initialize the view and
  */
-const HEIGHT = 400;
-const WIDTH = 600;
+const HEIGHT = 600;
+const WIDTH = 800;
+const DEFAULT_MARGIN = 80;
 const MARGIN = {
-  top: 100,
-  right: 100,
-  bottom: 100,
-  left: 100
+  top: DEFAULT_MARGIN,
+  right: DEFAULT_MARGIN,
+  bottom: DEFAULT_MARGIN,
+  left: DEFAULT_MARGIN
 };
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
@@ -23,7 +24,7 @@ const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 
  * @typedef {{ ID: string, Name: string; "Year Published": string, "Min Players": string, "Max Players": string, "Play Time": string, "Min Age": string, "Users Rated": string, "Rating Average": string, "BGG Rank": string, "Complexity Average": string, "Owned Users": string, "Mechanics": string, "Domains": string }} RawDataRow
  */
 /**
- * @typedef {RawDataRow & { yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number }} CsvDataRow
+ * @typedef {RawDataRow & { yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number, ownedUsers: number }} CsvDataRow
  */
 /**
  * @typedef {CsvDataRow & { '' : number }} DateRangeStatistics
@@ -44,10 +45,6 @@ function groupBarData(step) {
     table,
     groups
   }
-}
-
-function generateCategoryKey() {
-
 }
 
 /**
@@ -94,29 +91,6 @@ function mapRawData(row, i) {
     bggRank: Number(row['BGG Rank']),
     complexityAverage: Number(row['Complexity Average']),
     ownedUsers: Number(row['Owned Users'])
-  }
-}
-
-/**
- * @function mapRawDataForDateRanges
- * @param {[string, CsvDataRow[]]} groupKv - an array representation of a map entry
- * @param {number} index
- * @returns {DateRangeStatistics}
- */
-function mapRawDataForDateRangesWithMinPlayers([key, entries], i) {
-  return {
-    key,
-    entries,
-    entriesCount: entries.length,
-    // bin values which take the form of minAgeCount_1, collects separated versions of the min age count
-    ...entries.reduce((acc, el) => {
-      const key = `minPlayersCount_${el.minPlayers}`;
-
-      if (!acc[key]) acc[key] = 1
-      acc[key]++;
-
-      return acc;
-    }, {})
   }
 }
 
@@ -178,7 +152,7 @@ function getYAxis() {
  */
 function renderYAxis(y, label) {
   getYAxis()
-    .attr("transform", `translate(100, 0)`)
+    .attr("transform", `translate(${DEFAULT_MARGIN}, 0)`)
     .transition()
     .delay(DURATION)
     .call(d3.axisLeft(y))
@@ -193,7 +167,7 @@ function renderYAxis(y, label) {
  */
 function renderXAxis(x, label) {
   getXAxis()
-    .attr("transform", `translate(0, ${HEIGHT - 100})`)
+    .attr("transform", `translate(0, ${HEIGHT - DEFAULT_MARGIN})`)
     .transition()
     .delay(DURATION)
     .call(d3.axisBottom(x).tickFormat(formatYearRangeToLabel))//.tickSizeOuter(0))
@@ -219,7 +193,7 @@ function renderBarPlots(data, x, y) {
         .attr('x', d => x(d.bin))
         .attr('width', x.bandwidth())
         // TODO transition this to use margin?
-        .attr('y', d => HEIGHT - 100)
+        .attr('y', d => HEIGHT - MARGIN.top)
         .attr('height', _ => 0)
         // TODO move these to styles? These will not work with stacks?
         .attr("fill", "#4A90E2")
@@ -231,7 +205,7 @@ function renderBarPlots(data, x, y) {
         .ease(d3.easeExpIn)
         .attr("y", function (d) { return y(d.count); })
         // TODO transition this to use margin?
-        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .attr("height", function (d) { return HEIGHT - MARGIN.bottom - y(d.count); })
         .delay(function (d, i) { return (i * 50) }
         ),
       update => update.transition()
@@ -239,13 +213,13 @@ function renderBarPlots(data, x, y) {
         .ease(d3.easeExpIn)
         .attr("y", function (d) { return y(d.count); })
         // TODO transition this to use margin?
-        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
+        .attr("height", function (d) { return HEIGHT - MARGIN.bottom - y(d.count); })
         .delay(function (d, i) { return (i * 50) }),
       exit => exit.transition()
         .duration(DURATION)
         .ease(d3.easeCircleOut)
         .attr("height", 0)
-        .attr("y", HEIGHT - 100)
+        .attr("y", HEIGHT - MARGIN.bottom)
         .remove()
     );
 
@@ -256,67 +230,16 @@ function renderBarPlots(data, x, y) {
   }
 }
 
-function renderStackedBarPlot(data, x, y, color) {
-  console.log('stacked data: ', data)
+/**
+ * @param {object} data
+ * @param {}
+ */
+function renderScatterplot(data, x, y, size, color, keys) {
+  let plots = getSvg()
+    .selectAll('.scatterplot')
 
-  // TODO need to solve the parsing throught the stacked data structure
-  // TODO these are the portions that will help with the data
-  // .attr("x", function (d) { return x(d.data.group); })
-  // .attr("y", function (d) { return y(d[1]); })
-  // .attr("height", function(d) { return y(d[0]) - y(d[1]); })
 
-  // d3.stack().keys(get(2).columns).value(([, group], key) => group.get(key).length)(d3.index(data, d => d['Year Published']))
-
-  let bars = getSvg()
-    .selectAll(".bar")
-    .data(data, d => d.data.key)
-    .join(
-      enter => enter.append('rect')
-        .attr("class", "bar")
-        // .attr('x', d => x(d.bin))
-        // TODO this data.group is the access of the column thus we want to change this to search for the range
-        .attr("x", function (d, i) { return x(d[i].data.key); }) // TODO map this correctly to the positional value, I think it's key still
-        .attr('width', x.bandwidth())
-        // TODO transition this to use margin?
-        .attr('y', _ => HEIGHT - 100)
-        .attr('height', _ => 0)
-        // TODO move these to styles? These will not work with stacks?
-        .attr("fill", d => color(d.key)) // TODO this needs to change to the correct value
-        .attr("stroke", "#000035")
-        .attr("stroke-width", 1)
-        // animate the new elements added
-        .transition()
-        .duration(DURATION)
-        .ease(d3.easeExpIn)
-        // .attr("y", function (d) { return y(d.count); })
-        .attr("y", function (d) { return y(d[0]); }) // TODO map this correctly to the positional value // TODO should probably be using d[0] only
-        // TODO transition this to use margin?
-        .attr("height", _ => 0) //return y(d[0]) - y(d[1])
-        .delay(function (d, i) { return (i * 50) }),
-      update => update.transition()
-        .duration(DURATION)
-        .ease(d3.easeExpIn)
-        .attr("y", function (d) { return y(d[0]) - y(d[1]); }) //TODO should be d[1] - d[0] ish
-        // TODO transition this to use margin?
-        .attr("height", function (d) { return HEIGHT - 100 - y(d.count); })
-        .delay(function (d, i) { return (i * 50) }),
-      exit => exit.transition()
-        .duration(DURATION)
-        .ease(d3.easeCircleOut)
-        .attr("height", 0)
-        .attr("y", HEIGHT - 100)
-        .remove()
-    );
-
-  return {
-    bars,
-    x,
-    y,
-    color
-  }
 }
-
-// TODO render barplot with multi dimensional modifications
 
 /**
  * Rendering code references:
@@ -325,13 +248,22 @@ function renderStackedBarPlot(data, x, y, color) {
  * Data from -3500BCE to 1800CE
  */
 function renderStep1() {
+  if (page >= 2) {
+    getSvg()
+      .selectAll(".scatter")
+      .transition()
+      .remove();
+  }
+  page = 0;
+  updateStateFromPage();
+
   // Table data, but we will map to a simpler data structure for the bar plot
   const { groups } = groupBarData(0)
   const { data, maxCount } = mapSimpleData(groups);
 
   // scales
-  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
-  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
+  const x = d3.scaleBand().domain(groups.keys()).range([MARGIN.left, WIDTH - MARGIN.right])
+  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // trigger renders
   renderXAxis(x);
@@ -343,13 +275,22 @@ function renderStep1() {
 * Data from -3500BCE to 2000CE
  */
 function renderStep2() {
+  if (page >= 2) {
+    getSvg()
+      .selectAll(".scatter")
+      .transition()
+      .remove();
+  }
+  page = 1;
+  updateStateFromPage();
+
   // Table data, but we will map to a simpler data structure for the bar plot
   const { groups } = groupBarData(1)
   const { data, maxCount } = mapSimpleData(groups);
 
   // scales
-  const x = d3.scaleBand().domain(groups.keys()).range([100, WIDTH - 100])
-  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
+  const x = d3.scaleBand().domain(groups.keys()).range([MARGIN.left, WIDTH - MARGIN.right])
+  const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // trigger renders
   renderXAxis(x);
@@ -358,87 +299,94 @@ function renderStep2() {
 }
 
 /**
- * Data from -3500BCE to 2020CE
+ * Data from 2000 to 2020
  */
 function renderStep3() {
-  // Table data, but we will map to a simpler data structure for the bar plot
-  /** @type {CsvDataRow[]} */
-  const table = get(2).map(mapRawData);
+  if (page <= 1) {
+    getSvg()
+      .selectAll(".bar")
+      .transition()
+      .remove()
+  }
+  page = 2;
+  updateStateFromPage();
 
-  // use thi
-  const yearRanges = [
-    ...d3.pairs(YEAR_THRESHOLDS.slice(0, YEAR_THRESHOLDS.indexOf(2015))),
-    ...d3.range(2014, 2021).map(el => [el, el])
-  ];
-  const yearKeys = yearRanges.map(formatExtentToBin);
+  let table = get(2)
+    .filter(el => Number(el['Year Published']) > 1999 && Number(el['Year Published']) < 2021 && Number(el['Year Published']) !== 0)
+    .map(mapRawData);
 
-  const yearRangeBins = d3.group(table, d => {
-    const groupId = yearRanges.findIndex(([min, max]) => {
-      const year = d.yearPublished;
+  // Create groupings by year published and the minimum players
+  table = Object.values(table.reduce((acc, el) => {
+    const key = `${el.yearPublished}_${el.minPlayers}`;
 
-      if (min == max && year == min) return true;
+    if (!acc[key]) {
+      acc[key] = {
+        yearPublished: el.yearPublished,
+        minPlayers: el.minPlayers,
+        maxPlayers: el.maxPlayers,
+        key,
+        data: []
+      }
+    }
 
-      return year >= min && year < max
+    acc[key].data.push(el);
+
+    return acc;
+  }, {})).map(el => {
+    el.count = el.data.length;
+
+    // select the most popular game of the group to annotate with
+    // use bggRank to determine most popular game
+    let popularIndex = 0;
+    el.data.forEach((game, i) => {
+      if (game.bggRank > el.data[el.popular].bggRank) {
+        popularIndex = i;
+      }
     });
-    return yearKeys[groupId];
+    el.popular = el.data[popularIndex];
+
+    return el;
   })
 
-  // TODO this is not working as expected, need to probably do a custom map instead of rollup.
-  // const yearRangeBinStats = Array.from(yearRangeBins).map()
-
-  // Format bins with stats custom for this stacking
-  /** @type {DateRangeStatistics[]} */
-  const yearRangeBinStats = Array.from(yearRangeBins).filter(([key,]) => key).map(mapRawDataForDateRangesWithMinPlayers);
-  // Keys for all the min players keys
-  const minPlayerStackKeys = Array.from(new Set(...yearRangeBinStats.map(Object.keys))).filter(el => el !== 'key' && el !== 'entries' && el !== 'entriesCount')
-  minPlayerStackKeys.sort((a, b) => Number(a.split('_')[1]) - Number(b.split('_')[1])); // sort keys for correct stack alignment
-
-  // TODO I can set the values that don't exist from  NaN/undefined to 0. Or filter out the values?
-
-  // Stacked data based on bin stats and the keys
-  const stackedData = d3.stack().keys(minPlayerStackKeys)(yearRangeBinStats).map(row => {
-    return row.map(el => {
-      if (Number.isNaN(el[0])) el[0] = 0;
-      if (Number.isNaN(el[1])) el[1] = el[0];
-      return el;
-    })
-  });
-
-  // Get the max of all the maxes
-  const maxCount = Math.ceil(d3.max(yearRangeBinStats.map(el => el.entriesCount)) / 10) * 10; // TODO wait we need to get the max y in this case I might need to make this a different value
-
-  // scales
-  let x = d3.scaleBand().domain(yearKeys).range([100, WIDTH - 100])
-  let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - 100, 100])
-
-  // color palette = one color per subgroup
-  let color = d3.scaleOrdinal()
-    .domain(minPlayerStackKeys) // colors correspond to the
-    .range(COLOR_PALETTE)
-    .unknown('#ccc')
-
-  let bars;
+  let x = d3.scaleLinear().domain(d3.extent(table, d => d.yearPublished)).range([MARGIN.left, WIDTH - MARGIN.right]);
+  let y = d3.scaleLinear().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
+  let size;
+  let color;
 
   // trigger renders
   renderXAxis(x);
   renderYAxis(y);
-  ({ bars, x, y, color } = renderStackedBarPlot(stackedData, x, y, color));
-
-  // TODO NaN needs to be set to 0 or not rendered?
-
-  return {
-    bars,
-    x,
-    y,
-    color,
-  };
+  return renderScatterplot(data, x, y);
 }
 
 /**
  * Scatterplot to display data in a way with more pivotable characteristics.
  */
 function renderFinalScatterplot() {
+  if (page <= 1) {
+    getSvg()
+      .selectAll(".bar")
+      .transition()
+      .remove()
+  }
+  page = 3;
+  updateStateFromPage();
 
+  const table = get(2).filter(el => (el['Year Published']) < 2021).map(mapRawData)
+
+  //
+  let x = d3.scaleBand().domain(d3.extent(table, d => d.yearPublished)).range([MARGIN.left, WIDTH - MARGIN.right]);
+  //
+  let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
+  // rating
+  // let size = d3.scaleBand().domain([]).range([0, 10]);
+  // //
+  // let color = d3.scaleOrdinal()
+  //   .domain([]) // colors correspond to the
+  //   .range(COLOR_PALETTE)
+  //   .unknown('#ccc');
+
+  return renderScatterplot() // move to plot, x, y ?
 }
 
 /**
@@ -446,6 +394,7 @@ function renderFinalScatterplot() {
  * -------------------
  */
 let page = 0;
+let freeNav = false;
 
 function navigateBackward() {
   if (page === 0) return;
@@ -455,7 +404,7 @@ function navigateBackward() {
 }
 
 function navigateForward() {
-  if (page === data.length) return;
+  if (page === 3) return;
 
   page++;
   navigateRender();
@@ -478,8 +427,60 @@ function navigateRender() {
 
 function reset() {
   page = 0;
+  freeNav = false;
+
   return renderStep1();
 }
+
+function updateStateFromPage() {
+  document.getElementById('last').disabled = !freeNav;
+  document.getElementById('next').disabled = page > 2;
+
+  // force users to go forward on the path until completion.
+  // Disable the steps when they are less than the
+  for (let i = 0; i < 3; i++) {
+    document.getElementById(`step${i + 1}`).disabled = i < page || freeNav;
+
+    if (i < page || i > page) {
+      document.getElementById(`desc${i + 1}`).classList.add('hidden');
+    } else {
+      document.getElementById(`desc${i + 1}`).classList.remove('hidden');
+    }
+  }
+
+  if (page == 3 || freeNav) {
+    document.getElementById('controls').classList.remove('hidden')
+    freeNav = true;
+  } else {
+    document.getElementById('controls').classList.add('hidden')
+  }
+}
+
+function flipAxes() {
+  const xOptions = document.getElementById('x-options');
+  const yOptions = document.getElementById('y-options');
+
+  // swap
+  const temp = xOptions.value;
+  xOptions.value = document.getElementById('y-options').value;
+  yOptions.value = temp;
+
+  // TODO trigger
+}
+
+function setupEvents() {
+  document.getElementById('x-options').addEventListener('change', selectChange);
+  document.getElementById('y-options').addEventListener('change', selectChange);
+  document.getElementById('size-options').addEventListener('change', selectChange);
+  document.getElementById('color-options').addEventListener('change', selectChange);
+}
+
+function selectChange(event) {
+  console.log(event, event.target.id, event.target.value);
+
+  // TODO trigger
+}
+
 
 /**
  * Life Cycle
@@ -495,8 +496,10 @@ function reset() {
 async function startScripts() {
   await initData();
   getSvg();
+  setupEvents();
 
   // Initialize the code to work off of the first step
+  updateStateFromPage();
   renderStep1();
 }
 
