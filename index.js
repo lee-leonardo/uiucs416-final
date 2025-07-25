@@ -10,6 +10,7 @@ const MARGIN = {
   bottom: DEFAULT_MARGIN,
   left: DEFAULT_MARGIN
 };
+const CIRCLE_SIZE = [3, 15];
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
 const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40, two colors with high compat with all kinds of color blindness.
@@ -150,7 +151,7 @@ function getYAxis() {
 /**
  *
  */
-function renderYAxis(y, label) {
+function renderYAxisBarplot(y, label) {
   getYAxis()
     .attr("transform", `translate(${DEFAULT_MARGIN}, 0)`)
     .transition()
@@ -165,7 +166,7 @@ function renderYAxis(y, label) {
 /**
  *
  */
-function renderXAxis(x, label) {
+function renderXAxisBarplot(x, label) {
   getXAxis()
     .attr("transform", `translate(0, ${HEIGHT - DEFAULT_MARGIN})`)
     .transition()
@@ -236,9 +237,45 @@ function renderBarPlots(data, x, y) {
  */
 function renderScatterplot(data, x, y, size, color, keys) {
   let plots = getSvg()
-    .selectAll('.scatterplot')
+    .selectAll('.scatter')
+    .data(data, d => d[keys.id])
+    .join(
+      enter => enter.append('circle')
+        .attr('id', d => d.key)
+        .attr('class', 'scatter')
+        .attr('cx', d => x(d[keys.x]))
+        .attr('cy', d => y(d[keys.y]))
+        .attr('r', 0)
+        .attr('fill', d => color(d[keys.color]))
+        .transition()
+        .duration(DURATION)
+        .ease(d3.easeBounce)
+        .attr('r', d => size(d[keys.size]))
+        .delay((d, i) => i * 10),
+      update => update.transition()
+        .duration(DURATION)
+        .ease(d3.easeCircle)
+        .attr('id', d => d.key)
+        .attr('cx', d => x(d[keys.x]))
+        .attr('cy', d => y(d[keys.y]))
+        .attr('r', d => size(d[keys.size]))
+        .attr('fill', d => color(d[keys.color]))
+        .delay((d,i) => i * 10),
+      exit => exit.transition()
+        .duration(DURATION)
+        .ease(d3.easeElasticOut)
+        .attr('r', 0)
+        .remove()
+    );
 
-
+    return {
+      plots,
+      x,
+      y,
+      size,
+      color,
+      keys
+    }
 }
 
 /**
@@ -248,12 +285,6 @@ function renderScatterplot(data, x, y, size, color, keys) {
  * Data from -3500BCE to 1800CE
  */
 function renderStep1() {
-  if (page >= 2) {
-    getSvg()
-      .selectAll(".scatter")
-      .transition()
-      .remove();
-  }
   page = 0;
   updateStateFromPage();
 
@@ -266,8 +297,8 @@ function renderStep1() {
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // trigger renders
-  renderXAxis(x);
-  renderYAxis(y);
+  renderXAxisBarplot(x);
+  renderYAxisBarplot(y);
   return renderBarPlots(data, x, y);
 }
 
@@ -293,8 +324,8 @@ function renderStep2() {
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // trigger renders
-  renderXAxis(x);
-  renderYAxis(y);
+  renderXAxisBarplot(x);
+  renderYAxisBarplot(y);
   return renderBarPlots(data, x, y);
 }
 
@@ -302,12 +333,6 @@ function renderStep2() {
  * Data from 2000 to 2020
  */
 function renderStep3() {
-  if (page <= 1) {
-    getSvg()
-      .selectAll(".bar")
-      .transition()
-      .remove()
-  }
   page = 2;
   updateStateFromPage();
 
@@ -339,7 +364,7 @@ function renderStep3() {
     // use bggRank to determine most popular game
     let popularIndex = 0;
     el.data.forEach((game, i) => {
-      if (game.bggRank > el.data[el.popular].bggRank) {
+      if (game.bggRank > el.data[popularIndex].bggRank) {
         popularIndex = i;
       }
     });
@@ -348,27 +373,28 @@ function renderStep3() {
     return el;
   })
 
-  let x = d3.scaleLinear().domain(d3.extent(table, d => d.yearPublished)).range([MARGIN.left, WIDTH - MARGIN.right]);
-  let y = d3.scaleLinear().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
-  let size;
-  let color;
+  const xDomain = d3.extent(table, d => d.yearPublished)
+  xDomain[0] -= 1;
+  let x = d3.scaleLinear().domain(xDomain).range([MARGIN.left, WIDTH - MARGIN.right]);
+  let y = d3.scaleLog().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
+  let size = d3.scaleLinear().domain(d3.extent(table, d => d.minPlayers)).range(CIRCLE_SIZE);
+  let color = d3.scaleOrdinal(COLOR_PALETTE);
 
   // trigger renders
-  renderXAxis(x);
-  renderYAxis(y);
-  return renderScatterplot(data, x, y);
+  renderScatterplotAxis(x, y, {});
+  return renderScatterplot(table, x, y, size, color, {
+    id: 'key',
+    x: 'yearPublished',
+    y: 'count',
+    size: 'minPlayers',
+    color: 'minPlayers',
+  });
 }
 
 /**
  * Scatterplot to display data in a way with more pivotable characteristics.
  */
 function renderFinalScatterplot() {
-  if (page <= 1) {
-    getSvg()
-      .selectAll(".bar")
-      .transition()
-      .remove()
-  }
   page = 3;
   updateStateFromPage();
 
@@ -433,6 +459,31 @@ function reset() {
 }
 
 function updateStateFromPage() {
+  if (page <= 1) {
+    getSvg()
+      .selectAll(".scatter")
+      .transition()
+      .delay(DURATION)
+      .ease(d3.easeBounceOut)
+      .attr('r', 0)
+      .transition()
+      .remove()
+  }
+
+  if (page >= 2) {
+    getSvg()
+      .selectAll(".bar")
+      .transition()
+      .delay(DURATION)
+      .ease(d3.easeCircleOut)
+      .attr('height', 0)
+      .attr('y', HEIGHT - MARGIN.bottom)
+      .transition()
+      .remove()
+  }
+
+
+  // TODO page == 2 disable for controsl
   if (page == 3) {
     document.getElementById('controls').classList.remove('hidden')
     freeNav = true;
