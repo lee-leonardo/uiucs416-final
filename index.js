@@ -433,7 +433,14 @@ function reset() {
 }
 
 function updateStateFromPage() {
-  document.getElementById('last').disabled = !freeNav || page == 0;
+  if (page == 3) {
+    document.getElementById('controls').classList.remove('hidden')
+    freeNav = true;
+  } else {
+    document.getElementById('controls').classList.add('hidden')
+  }
+
+  document.getElementById('last').disabled = !freeNav || page === 0;
   document.getElementById('next').disabled = page > 2;
 
   // force users to go forward on the path until completion.
@@ -446,13 +453,6 @@ function updateStateFromPage() {
     } else {
       document.getElementById(`desc${i + 1}`).classList.remove('hidden');
     }
-  }
-
-  if (page == 3) {
-    document.getElementById('controls').classList.remove('hidden')
-    freeNav = true;
-  } else {
-    document.getElementById('controls').classList.add('hidden')
   }
 }
 
