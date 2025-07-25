@@ -182,6 +182,35 @@ function renderXAxisBarplot(x, label) {
 }
 
 /**
+ * @param {object} x
+ * @param {object} y
+ * @param {{ label: string, xType: string, yType: string }} options - values to pass to customize behavior
+ */
+function renderScatterplotAxis(x, y, options) {
+  let xAxis = getXAxis()
+    .attr("transform", `translate(0, ${HEIGHT - DEFAULT_MARGIN})`)
+    .transition()
+    .delay(DURATION)
+    .call(d3.axisBottom(x))
+    .selectAll("text")
+    .attr("transform", "rotate(-45)")
+    .style("text-anchor", "end");
+
+
+  let yAxis = getYAxis()
+    .attr("transform", `translate(${DEFAULT_MARGIN}, 0)`)
+    .transition()
+    .delay(DURATION)
+    .call(d3.axisLeft(y))
+
+  return {
+    x,
+    y,
+    options
+  }
+}
+
+/**
  * Follows the old pattern
  */
 function renderBarPlots(data, x, y) {
