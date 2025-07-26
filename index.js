@@ -396,7 +396,15 @@ function getScaleFromKeyAndType(table, key, type) {
  * Measure skew
  */
 function measureSkew(data, key) {
+  const count = data.length;
+  const mean = d3.mean(values, d=>d[key])
+  const dev = d3.deviation(values, d=>d[key])
 
+  const skew = data.reduce((sum, val) => (
+    sum + Math.pow((val - mean) / dev, 3)
+  ), 0);
+
+  return skew / count;
 }
 
 /**
