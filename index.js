@@ -198,7 +198,7 @@ function renderXAxisBarplot(x, label) {
 /**
  * @param {object} x
  * @param {object} y
- * @param {{ label: string, xType: string, yType: string }} options - values to pass to customize behavior
+ * @param {{ xLabel: string, yLabel:string, xType: string, yType: string }} options - values to pass to customize behavior
  */
 function renderScatterplotAxis(x, y, options) {
   let xAxis = getXAxis()
@@ -275,14 +275,14 @@ function renderBarPlots(data, x, y) {
 }
 
 /**
- * @param {string} value
+ * @param {string} key
  * @return {{ key: string, type: string }} value
  */
-function valuesFromDropdown(value) {
+function valuesFromDropdown(key) {
   // select type
 
   let type;
-  switch (value) {
+  switch (key) {
     case 'BGG Rank':
     case 'bggRank':
     case 'Min Players':
@@ -322,9 +322,81 @@ function valuesFromDropdown(value) {
   }
 
   return {
-    key: value,
+    key,
     type,
   }
+}
+
+
+/**
+ * Scale from key type
+ * @param {string} key
+ * @param {string} type
+ */
+function getScaleFromKeyAndType(table, key, type) {
+  let scale;
+  let domain;
+  let skew; // number
+  let hasZero;
+
+  switch (type) {
+    case DATA_TYPES.NOM:
+    case DATA_TYPES.CYC:
+      break;
+    case DATA_TYPES.QUANT:
+    case DATA_TYPES.FIELD:
+      // -0.5 < skew && skew < 0.5 no transform
+      scale = d3.scaleLinear()
+      domain = d3.extent(table, d => d[key])
+      skew = measureSkew(table, key)
+      hasZero = table.reduce((acc, d) => acc || d[key], false)
+
+      // TODO domain mods
+
+      if ((domain[0] < 0 || hasZero) && Math.abs(skew) > 0.5) {
+        // avoid log and square root scales with negative and zero values
+        scale = d3.scaleSymlog()
+      } if (-1 < skew && skew < -0.5) {
+        // mild left skew
+        scale = d3.scalePow();
+      } else if (0.5 < skew && skew < 1) {
+        // mild right skew
+        scale = d3.scaleSqrt();
+      } else if (skew <= -1) {
+        // large left skew
+        scale = d3.scalePow();
+      } else if (1 <= skew) {
+        // large right skew
+        scale = d3.scaleLog()
+      } else {
+        // TODO add domain padding for linear, what would be a good value?
+      }
+
+      break;
+    case DATA_TYPES.CAT:
+    case DATA_TYPES.ORD:
+    default:
+      scale = d3.scalePoint();
+      // TODO make sure this is right
+      domain = d3.union(table, d => d[key]);
+      break;
+  }
+
+  // let x = d3.scaleLinear().domain(xDomain).range([MARGIN.left, WIDTH - MARGIN.right]);
+  // let y = d3.scaleLog().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
+  // let size = d3.scaleLinear().domain(d3.extent(table, d => d.minPlayers)).range(CIRCLE_SIZE);
+
+  // let p = d3.scalePoint()
+  // // d3.scaleOrdinal()
+
+  return scale.domain(domain);
+}
+
+/**
+ * Measure skew
+ */
+function measureSkew(data, key) {
+
 }
 
 /**
@@ -499,24 +571,23 @@ function renderFinalScatterplot() {
   const { key: xKey, type: xType } = valuesFromDropdown(document.getElementById('x-options').value);
   const { key: yKey, type: yType } = valuesFromDropdown(document.getElementById('y-options').value);
   const { key: sKey, type: sType } = valuesFromDropdown(document.getElementById('size-options').value);
-  const { key: cKey, type: cType } = valuesFromDropdown(document.getElementById('color-options').value);
+  const cKey = document.getElementById('color-options').value;
 
   let id = 'ID';
   // Determine id via values from the above.
+  let x = getScaleFromKeyAndType(table, xKey, xType).range([MARGIN.left, WIDTH - MARGIN.right]);
+  let y = getScaleFromKeyAndType(table, yKey, yType).range([HEIGHT - MARGIN.bottom, MARGIN.top])
+  let size = getScaleFromKeyAndType(table, sKey, sType).range(CIRCLE_SIZE)
+  let color = d3.scaleOrdinal(COLOR_PALETTE);
 
-  //
-  let x = d3.scaleBand().domain(d3.extent(table, d => d.yearPublished)).range([MARGIN.left, WIDTH - MARGIN.right]);
-  //
-  let y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
-  // rating
-  // let size = d3.scaleBand().domain([]).range([0, 10]);
-  // //
-  // let color = d3.scaleOrdinal()
-  //   .domain([]) // colors correspond to the
-  //   .range(COLOR_PALETTE)
-  //   .unknown('#ccc');
-
-  return renderScatterplot() // move to plot, x, y ?
+  renderScatterplotAxis(x, y, {});
+  return renderScatterplot(table, x, y, size, color, {
+    id,
+    x: xKey,
+    y: yKey,
+    size: sKey,
+    color: cKey
+  }) // move to plot, x, y ?
 }
 
 /**
