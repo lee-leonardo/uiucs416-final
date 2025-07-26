@@ -14,6 +14,20 @@ const CIRCLE_SIZE = [3, 15];
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
 const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40, two colors with high compat with all kinds of color blindness.
+const DATA_TYPES = {
+  /** @desc ordered, discrete - sizes */
+  ORD: 'ordinal',
+  /** @desc ordered, discrete - counts */
+  QUANT: 'quantitative',
+  /** @desc  unordered, discrete - shapes */
+  NOM: 'nominal',
+  /** @desc unordered, discrete - nationality */
+  CAT: 'categorical',
+  /** @desc ordered, continuous - temp, average */
+  FIELD: 'field',
+  /** @desc unordered, continous - directions, hues */
+  CYC: 'cyclic'
+}
 
 // set to 11 bins to support the coloration
 const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 2015, 2016, 2017, 2018, 2019, 2020];
@@ -261,6 +275,59 @@ function renderBarPlots(data, x, y) {
 }
 
 /**
+ * @param {string} value
+ * @return {{ key: string, type: string }} value
+ */
+function valuesFromDropdown(value) {
+  // select type
+
+  let type;
+  switch (value) {
+    case 'BGG Rank':
+    case 'bggRank':
+    case 'Min Players':
+    case 'minPlayers':
+    case 'Max Players':
+    case 'maxPlayers':
+      type = DATA_TYPES.ORD
+      break;
+    case 'Name':
+      type = DATA_TYPES.CYC
+      break;
+    case 'Year Published':
+    case 'yearPublished':
+    case 'Mechanics':
+    case 'Domains':
+      type = DATA_TYPES.CAT
+      break;
+    case 'ID':
+    case 'Min Age':
+    case 'minAge':
+      type = DATA_TYPES.NOM
+      break;
+    case 'Rating Average':
+    case 'ratingAverage':
+    case 'Complexity Average':
+    case 'complexityAverage':
+      type = DATA_TYPES.FIELD
+      break;
+    case 'Play Time':
+    case 'playTime':
+    case 'Owned Users':
+    case 'ownedUsers':
+    case 'Users Rated':
+    case 'usersRated':
+    default:
+      type = DATA_TYPES.QUANT
+  }
+
+  return {
+    key: value,
+    type,
+  }
+}
+
+/**
  * @param {object} data
  * @param {}
  */
@@ -428,6 +495,14 @@ function renderFinalScatterplot() {
   updateStateFromPage();
 
   const table = get(2).filter(el => (el['Year Published']) < 2021).map(mapRawData)
+
+  const { key: xKey, type: xType } = valuesFromDropdown(document.getElementById('x-options').value);
+  const { key: yKey, type: yType } = valuesFromDropdown(document.getElementById('y-options').value);
+  const { key: sKey, type: sType } = valuesFromDropdown(document.getElementById('size-options').value);
+  const { key: cKey, type: cType } = valuesFromDropdown(document.getElementById('color-options').value);
+
+  let id = 'ID';
+  // Determine id via values from the above.
 
   //
   let x = d3.scaleBand().domain(d3.extent(table, d => d.yearPublished)).range([MARGIN.left, WIDTH - MARGIN.right]);
