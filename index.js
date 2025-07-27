@@ -102,7 +102,8 @@ function mapRawData(row, i) {
     maxPlayers: Number(row['Max Players']),
     playTime: Number(row['Play Time']),
     minAge: Number(row['Min Age']),
-    usersRated: Number(row['Rating Average']),
+    usersRated: Number(row['Users Rated']),
+    ratingAverage: Number(row['Rating Average']),
     bggRank: Number(row['BGG Rank']),
     complexityAverage: Number(row['Complexity Average']),
     ownedUsers: Number(row['Owned Users'])
@@ -207,9 +208,9 @@ function renderScatterplotAxis(x, y, options) {
     .delay(DURATION)
     .call(d3.axisBottom(x))
     .selectAll("text")
+    .attr("transform", "translate(0,10)")
     .attr("transform", "rotate(-45)")
     .style("text-anchor", "end");
-
 
   let yAxis = getYAxis()
     .attr("transform", `translate(${DEFAULT_MARGIN}, 0)`)
@@ -289,20 +290,21 @@ function valuesFromDropdown(key) {
     case 'minPlayers':
     case 'Max Players':
     case 'maxPlayers':
+    case 'Min Age':
+    case 'minAge':
       type = DATA_TYPES.ORD
       break;
     case 'Name':
       type = DATA_TYPES.CYC
       break;
-    case 'Year Published':
-    case 'yearPublished':
+    // should be categorical, but better displayed as quantitative
+    // case 'Year Published':
+    // case 'yearPublished':
     case 'Mechanics':
     case 'Domains':
       type = DATA_TYPES.CAT
       break;
     case 'ID':
-    case 'Min Age':
-    case 'minAge':
       type = DATA_TYPES.NOM
       break;
     case 'Rating Average':
@@ -336,60 +338,72 @@ function valuesFromDropdown(key) {
 function getScaleFromKeyAndType(table, key, type) {
   let scale;
   let domain;
-  let skew; // number
-  let hasZero;
 
   switch (type) {
     case DATA_TYPES.NOM:
     case DATA_TYPES.CYC:
       break;
-    case DATA_TYPES.QUANT:
-    case DATA_TYPES.FIELD:
-      // -0.5 < skew && skew < 0.5 no transform
-      scale = d3.scaleLinear()
-      domain = d3.extent(table, d => d[key])
-      skew = measureSkew(table, key)
-      hasZero = table.reduce((acc, d) => acc || d[key], false)
-
-      // TODO domain mods
-
-      if ((domain[0] < 0 || hasZero) && Math.abs(skew) > 0.5) {
-        // avoid log and square root scales with negative and zero values
-        scale = d3.scaleSymlog()
-      } if (-1 < skew && skew < -0.5) {
-        // mild left skew
-        scale = d3.scalePow();
-      } else if (0.5 < skew && skew < 1) {
-        // mild right skew
-        scale = d3.scaleSqrt();
-      } else if (skew <= -1) {
-        // large left skew
-        scale = d3.scalePow();
-      } else if (1 <= skew) {
-        // large right skew
-        scale = d3.scaleLog()
-      } else {
-        // TODO add domain padding for linear, what would be a good value?
-      }
-
-      break;
     case DATA_TYPES.CAT:
     case DATA_TYPES.ORD:
-    default:
       scale = d3.scalePoint();
-      // TODO make sure this is right
-      domain = d3.union(table, d => d[key]);
+      domain = d3.union(table.map(d => d[key]));
+      break;
+    case DATA_TYPES.QUANT:
+    case DATA_TYPES.FIELD:
+    default:
+      ({ scale, domain }) = determineScaleForQual(table, key, type)
       break;
   }
 
+  return scale.domain(domain);
+}
+
+/**
+ *
+ */
+function determineScaleForQual(table, key, type) {
+  // -0.5 < skew && skew < 0.5 no transform
+  let scale = d3.scaleLinear()
+  let domain = d3.extent(table, d => d[key])
+
+  let skew = measureSkew(table, key)
+  let hasZero = table.reduce((acc, d) => acc || d[key] === 0, false)
+
+  // if (key === 'ratingAverage') {}
+
+  if ((domain[0] < 0 || hasZero) && Math.abs(skew) > 0.5) {
+    // avoid log and square root scales with negative and zero values
+    scale = d3.scaleSymlog()
+  } if (-1 < skew && skew < -0.5) {
+    // mild left skew
+    scale = d3.scalePow().exponent(2);
+  } else if (0.5 < skew && skew < 1) {
+    // mild right skew
+    scale = d3.scaleSqrt();
+  } else if (skew <= -1) {
+    // large left skew
+    scale = d3.scalePow().exponent(2);
+  } else if (1 <= skew) {
+    // large right skew
+    scale = d3.scaleLog()
+  }
+  //  else {
+  //   // pad the linear scales so that the minimum and maximum is not directly used cutting off their visibility potentially.
+  //   const padding = (domain[1] - domain[0]) * 0.1;
+  //   domain[0] = domain[0] - padding;
+  //   domain[1] = domain[0] + padding;
+  // }
+
   // let x = d3.scaleLinear().domain(xDomain).range([MARGIN.left, WIDTH - MARGIN.right]);
   // let y = d3.scaleLog().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
-  // let size = d3.scaleLinear().domain(d3.extent(table, d => d.minPlayers)).range(CIRCLE_SIZE);
 
   // let p = d3.scalePoint()
   // // d3.scaleOrdinal()
 
-  return scale.domain(domain);
+  return {
+    scale,
+    domain
+  }
 }
 
 /**
@@ -397,11 +411,11 @@ function getScaleFromKeyAndType(table, key, type) {
  */
 function measureSkew(data, key) {
   const count = data.length;
-  const mean = d3.mean(values, d=>d[key])
-  const dev = d3.deviation(values, d=>d[key])
+  const mean = d3.mean(data, d=>d[key])
+  const dev = d3.deviation(data, d=>d[key])
 
   const skew = data.reduce((sum, val) => (
-    sum + Math.pow((val - mean) / dev, 3)
+    sum + Math.pow((val[key] - mean) / dev, 3)
   ), 0);
 
   return skew / count;
@@ -426,7 +440,10 @@ function renderScatterplot(data, x, y, size, color, keys) {
         .transition()
         .duration(DURATION)
         .ease(d3.easeBounce)
-        .attr('r', d => size(d[keys.size]))
+        .attr('r', d => {
+          if (!size) return CIRCLE_SIZE[0]
+          return size(d.keys.size)
+        })
         .delay((d, i) => i * 10),
       update => update.transition()
         .duration(DURATION)
@@ -434,12 +451,15 @@ function renderScatterplot(data, x, y, size, color, keys) {
         .attr('id', d => d.key)
         .attr('cx', d => x(d[keys.x]))
         .attr('cy', d => y(d[keys.y]))
-        .attr('r', d => size(d[keys.size]))
+        .attr('r', d => {
+          if (!size) return CIRCLE_SIZE[0]
+          return size(d.keys.size)
+        })
         .attr('fill', d => color(d[keys.color]))
         .delay((d,i) => i * 10),
       exit => exit.transition()
         .duration(DURATION)
-        .ease(d3.easeElasticOut)
+        .ease(d3.easePolyOut)
         .attr('r', 0)
         .remove()
     );
@@ -574,18 +594,26 @@ function renderFinalScatterplot() {
   page = 3;
   updateStateFromPage();
 
-  const table = get(2).filter(el => (el['Year Published']) < 2021).map(mapRawData)
+  let table = get(2).filter(el => (el['Year Published']) < 2021).map(mapRawData)
 
   const { key: xKey, type: xType } = valuesFromDropdown(document.getElementById('x-options').value);
   const { key: yKey, type: yType } = valuesFromDropdown(document.getElementById('y-options').value);
-  const { key: sKey, type: sType } = valuesFromDropdown(document.getElementById('size-options').value);
   const cKey = document.getElementById('color-options').value;
 
   let id = 'ID';
   // Determine id via values from the above.
-  let x = getScaleFromKeyAndType(table, xKey, xType).range([MARGIN.left, WIDTH - MARGIN.right]);
+  // let x = getScaleFromKeyAndType(table, xKey, xType).range([MARGIN.left, WIDTH - MARGIN.right]);
+  let x = d3.scaleLog().domain([1, d3.max(table, d => d[xKey])]).range([MARGIN.left, WIDTH - MARGIN.right]);
   let y = getScaleFromKeyAndType(table, yKey, yType).range([HEIGHT - MARGIN.bottom, MARGIN.top])
-  let size = getScaleFromKeyAndType(table, sKey, sType).range(CIRCLE_SIZE)
+
+  // use Bin
+  let sKey;
+  let size;
+  if (xType === '' && yType === '') {
+
+  }
+
+
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
   renderScatterplotAxis(x, y, {});
@@ -705,7 +733,6 @@ function flipAxes() {
 function setupEvents() {
   document.getElementById('x-options').addEventListener('change', selectChange);
   document.getElementById('y-options').addEventListener('change', selectChange);
-  document.getElementById('size-options').addEventListener('change', selectChange);
   document.getElementById('color-options').addEventListener('change', selectChange);
 }
 
