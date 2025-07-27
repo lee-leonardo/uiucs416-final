@@ -32,22 +32,6 @@
         <span>Axes options: </span>
         <select id="x-options" name="x-options">
           <!-- Should be same as y-options -->
-          <option value="yearPublished" selected>Year Published</option>
-          <option value="bggRank">BGG Rank</option>
-          <option value="complexityAverage">Complexity Average</option>
-          <option value="minPlayers">Min Players</option>
-          <option value="maxPlayers">Max Players</option>
-          <option value="playTime">Play Time</option>
-          <option value="minAge">Min Age</option>
-          <option value="usersRated">Users Rated</option>
-          <option value="ratingAverage">Rating Average</option>
-          <option value="ownedUsers">Owned Users</option>
-          <option value="count">Count</option>
-        </select>
-        <button id="axis-flip" onclick="flipAxes()">flip</button>
-        <select id="y-options" name="y-options">
-          <!-- Should be same as x-options -->
-          <option value="ownedUsers" selected>Owned Users</option>
           <option value="yearPublished">Year Published</option>
           <option value="bggRank">BGG Rank</option>
           <option value="complexityAverage">Complexity Average</option>
@@ -57,38 +41,32 @@
           <option value="minAge">Min Age</option>
           <option value="usersRated">Users Rated</option>
           <option value="ratingAverage">Rating Average</option>
-          <option value="count">Count</option>
+          <option value="ownedUsers" selected>Owned Users</option>
+        </select>
+        <button id="axis-flip" onclick="flipAxes()">flip</button>
+        <select id="y-options" name="y-options">
+          <!-- Should be same as x-options -->
+          <option value="ownedUsers">Owned Users</option>
+          <option value="yearPublished">Year Published</option>
+          <option value="bggRank">BGG Rank</option>
+          <option value="complexityAverage" selected>Complexity Average</option>
+          <option value="minPlayers">Min Players</option>
+          <option value="maxPlayers">Max Players</option>
+          <option value="playTime">Play Time</option>
+          <option value="minAge">Min Age</option>
+          <option value="usersRated">Users Rated</option>
+          <option value="ratingAverage">Rating Average</option>
         </select>
       </div>
-      <div id="quality">
-        <div class="container">
-          <span>Bubble Size options: </span>
-          <select id="size-options" name="size-options">
-            <!-- Same as the x and y-options -->
-            <option value="ratingAverage" selected>Rating Average</option>
-            <option value="yearPublished">Year Published</option>
-            <option value="bggRank">BGG Rank</option>
-            <option value="complexityAverage">Complexity Average</option>
-            <option value="minPlayers">Min Players</option>
-            <option value="maxPlayers">Max Players</option>
-            <option value="playTime">Play Time</option>
-            <option value="minAge">Min Age</option>
-            <option value="usersRated">Users Rated</option>
-            <option value="ownedUsers">Owned Users</option>
-            <option value="count">Count</option>
-          </select>
-        </div>
-        <div class="container">
-          <span>Color options: </span>
-          <select id="color-options" onchange="selectChange()">
-            <option value="Mechanics" selected>Mechanics</option>
-            <option value="Domains">Domains</option>
-            <option value="complexityAverage">Complexity Average</option>
-            <option value="minPlayers">Min Players</option>
-            <option value="maxPlayers">Max Players</option>
-            <option value="minAge">Min Age</option>
-          </select>
-        </div>
+      <div id="quality" class="container">
+        <span>Color options: </span>
+        <select id="color-options" onchange="selectChange()">
+          <option value="Mechanics" selected>Mechanics</option>
+          <option value="Domains">Domains</option>
+          <option value="minPlayers">Min Players</option>
+          <option value="maxPlayers">Max Players</option>
+          <option value="minAge">Min Age</option>
+        </select>
       </div>
     </div>
 
