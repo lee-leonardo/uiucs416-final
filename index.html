@@ -25,7 +25,14 @@
       <button id="next" onclick="navigateForward()">&gt;</button>
       <button id="reset "onclick="reset()">Reset</button>
     </div>
-    <div id="main" class="container"></div>
+    <div id="main" class="container">
+      <svg>
+        <g id="plots"></g>
+        <g id="x-axis"></g>
+        <g id="y-axis"></g>
+        <g id="hover"></g>
+      </svg>
+    </div>
     <!-- <div id="controls" class="container hidden"> -->
     <div id="controls" class="container">
       <div id="axes" class="container">
@@ -72,7 +79,7 @@
 
     <!-- Libraries used -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.independent.min.js" integrity="sha512-89IU2quof1oR2mYXl38GkyY7HQFyHtzubPPEP7DlLNAkO6FH/3AHByuHAfi0zvLP4hMtggXASW9gFzQEYn8rWg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
 
     <!-- Split out javascript tag for data-->
     <script src="./data.js"></script>
