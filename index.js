@@ -964,40 +964,18 @@ function barplot2Annotations(data, x, y) {
       subject: {
         text: '1'
       },
-      data: { "Name": "Pachisi", "Bin": "[0, 1000)", "Year Published": "400.0", "Users Rated": "4476", "Owned Users": "7349.0", "Complexity Average": "1.21", "Mechanics": "Dice Rolling, Race, Roll / Spin and Move, Static Capture, Team-Based Game" }
-    },
-    {
-      note: {
-        title: 'Go-moku (Five in a Row) 700 CE',
-        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
-        label: 'not formalized until the 1700s, but influential for games such as Go'
-      },
-      subject: {
-        text: '2'
-      },
-      data: { "Name": "Go-Moku", "Bin": "[0, 1000)", "Year Published": "700.0", "Users Rated": "595", "Owned Users": "518.0", "Complexity Average": "1.88", "Mechanics": "Pattern Building" }
-    },
-    {
-      note: {
-        title: 'Craps 1125 CE',
-        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
-        label: 'people have been addicted to this game for almost a millenia'
-      },
-      subject: {
-        text: '3'
-      },
-      data: { "Name": "Craps", "Bin": "[1000, 1500)", "Year Published": "1125.0", "Users Rated": "284", "Owned Users": "183.0", "Complexity Average": "1.79", "Mechanics": "Betting and Bluffing, Dice Rolling" }
+      data: { "Name": "Pachisi", "Bin": "[0, 1000)", "Year Published": "400.0", "Users Rated": "4476", "Owned Users": "7349.0", "Complexity Average": "1.21", "Mechanics": "Dice Rolling, Race, Roll / Spin and Move, Static Capture, Team-Based Game", count: 70 }
     },
     {
       note: {
         title: 'Checkers 1150 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
-        label: 'people have been addicted to this game for almost a millenia'
+        label: 'a western staple, much like chess'
       },
       subject: {
-        text: '4'
+        text: '2'
       },
-      data: { "Name": "Checkers", "Bin": "[1000, 1500)", "Year Published": "1150.0", "Users Rated": "7182", "Owned Users": "8701.0", "Complexity Average": "1.77", "Mechanics": "Grid Movement, Pattern Movement, Square Grid, Static Capture" }
+      data: { "Name": "Checkers", "Bin": "[1000, 1500)", "Year Published": "1150.0", "Users Rated": "7182", "Owned Users": "8701.0", "Complexity Average": "1.77", "Mechanics": "Grid Movement, Pattern Movement, Square Grid, Static Capture", count: 130 }
     },
     {
       note: {
@@ -1006,9 +984,9 @@ function barplot2Annotations(data, x, y) {
         label: 'people have been addicted to this game for almost a millenia'
       },
       subject: {
-        text: '5'
+        text: '3'
       },
-      data: { "Name": "Blackjack", "Bin": "[1500, 1750)", "Year Published": "1700.0", "Users Rated": "1568", "Owned Users": "596.0", "Complexity Average": "1.5", "Mechanics": "Betting and Bluffing, Push Your Luck" }
+      data: { "Name": "Blackjack", "Bin": "[1500, 1750)", "Year Published": "1700.0", "Users Rated": "1568", "Owned Users": "596.0", "Complexity Average": "1.5", "Mechanics": "Betting and Bluffing, Push Your Luck", count: 70 }
     },
     {
       note: {
@@ -1017,9 +995,9 @@ function barplot2Annotations(data, x, y) {
         label: "not texas hold'em though"
       },
       subject: {
-        text: '6'
+        text: '4'
       },
-      data: { "Name": "Poker", "Bin": "[1800, 1825)", "Year Published": "1810.0", "Users Rated": "9276", "Owned Users": "7978.0", "Complexity Average": "2.45", "Mechanics": "Betting and Bluffing, Player Elimination, Set Collection" }
+      data: { "Name": "Poker", "Bin": "[1800, 1825)", "Year Published": "1810.0", "Users Rated": "9276", "Owned Users": "7978.0", "Complexity Average": "2.45", "Mechanics": "Betting and Bluffing, Player Elimination, Set Collection", count: 70 }
     },
     {
       note: {
@@ -1028,9 +1006,9 @@ function barplot2Annotations(data, x, y) {
         label: 'a game that kicked off a new renaissance of board gaming'
       },
       subject: {
-        text: '7'
+        text: '5'
       },
-      data: { "Name": "Catan", "Bin": "[1995, 2000)", "Year Published": "1995.0", "Users Rated": "101510", "Owned Users": "154531.0", "Complexity Average": "2.32", "Mechanics": "Dice Rolling, Hexagon Grid, Income, Modular Board, Network and Route Building, Race, Random Production, Trading, Variable Set-up" }
+      data: { "Name": "Catan", "Bin": "[1995, 2000)", "Year Published": "1995.0", "Users Rated": "101510", "Owned Users": "154531.0", "Complexity Average": "2.32", "Mechanics": "Dice Rolling, Hexagon Grid, Income, Modular Board, Network and Route Building, Race, Random Production, Trading, Variable Set-up", count: 1163 }
     },
   ]
 
