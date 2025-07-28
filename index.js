@@ -10,7 +10,7 @@ const MARGIN = {
   bottom: DEFAULT_MARGIN,
   left: DEFAULT_MARGIN
 };
-const CIRCLE_SIZE = [3, 15];
+const CIRCLE_SIZE = [1, 16];
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
 const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40, two colors with high compat with all kinds of color blindness.
@@ -128,8 +128,17 @@ function formatYearRangeToLabel(range) {
  * Node getters
  */
 function getSvg() {
-  if (d3.select('#main').select('svg').nodes().length) {
-    return d3.select('#main').select('svg');
+  let svg = d3.select('#main').select('svg');
+
+  if (svg.nodes().length) {
+    if (!svg.attr('height')) {
+      svg = svg.attr("id", "viewport")
+        .attr("height", HEIGHT)
+        .attr("width", WIDTH)
+        .attr("viewBox", [0, 0, WIDTH, HEIGHT])
+    }
+
+    return svg;
   }
 
   return d3.select("#main")
@@ -156,6 +165,26 @@ function getYAxis() {
 
   return getSvg().append("g")
     .attr('id', 'y-axis');
+}
+
+function getPlot() {
+  const plots = getSvg().select('#plots');
+  if (plots.nodes().length) {
+    return plots;
+  }
+
+  return plots.append('g')
+    .attr('id', 'plots')
+}
+
+function getAnnotations() {
+  const annotations = getSvg().select('#hover');
+  if (annotations.nodes().length) {
+    return annotations;
+  }
+
+  return annotations.append('g')
+    .attr('id', 'hover')
 }
 
 /**
@@ -229,7 +258,7 @@ function renderScatterplotAxis(x, y, options) {
  * Follows the old pattern
  */
 function renderBarPlots(data, x, y) {
-  let bars = getSvg()
+  let bars = getPlot()
     .selectAll(".bar")
     .data(data, d => d.bin)
     .join(
@@ -426,12 +455,12 @@ function measureSkew(data, key) {
  * @param {}
  */
 function renderScatterplot(data, x, y, size, color, keys) {
-  let plots = getSvg()
+  let plots = getPlot()
     .selectAll('.scatter')
     .data(data, d => d[keys.id])
     .join(
       enter => enter.append('circle')
-        .attr('id', d => d.key)
+        .attr('id', d => d[keys.id])
         .attr('class', 'scatter')
         .attr('cx', d => x(d[keys.x]))
         .attr('cy', d => y(d[keys.y]))
@@ -442,18 +471,19 @@ function renderScatterplot(data, x, y, size, color, keys) {
         .ease(d3.easeBounce)
         .attr('r', d => {
           if (!size) return CIRCLE_SIZE[0]
-          return size(d.keys.size)
+          return size(d[keys.size])
         })
         .delay((d, i) => i * 10),
       update => update.transition()
         .duration(DURATION)
         .ease(d3.easeCircle)
-        .attr('id', d => d.key)
+        .attr('id', d => d[keys.id])
+        .attr('class', 'scatter')
         .attr('cx', d => x(d[keys.x]))
         .attr('cy', d => y(d[keys.y]))
         .attr('r', d => {
           if (!size) return CIRCLE_SIZE[0]
-          return size(d.keys.size)
+          return size(d[keys.size])
         })
         .attr('fill', d => color(d[keys.color]))
         .delay((d,i) => i * 10),
@@ -573,7 +603,7 @@ function renderStep3() {
   xDomain[0] -= 1;
   let x = d3.scaleLinear().domain(xDomain).range([MARGIN.left, WIDTH - MARGIN.right]);
   let y = d3.scaleLog().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
-  let size = d3.scaleLinear().domain(d3.extent(table, d => d.minPlayers)).range(CIRCLE_SIZE);
+  let size = d3.scaleSqrt().domain(d3.extent(table, d => d.minPlayers)).range(CIRCLE_SIZE);
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
   // trigger renders
@@ -609,10 +639,49 @@ function renderFinalScatterplot() {
   // use Bin
   let sKey;
   let size;
-  if (xType === '' && yType === '') {
+  if (xType === DATA_TYPES.CAT && yType === DATA_TYPES.CAT ||
+    xType === DATA_TYPES.ORD && yType === DATA_TYPES.ORD ||
+    xType === DATA_TYPES.CAT && yType === DATA_TYPES.ORD ||
+    xType === DATA_TYPES.ORD && yType === DATA_TYPES.CAT) {
+    // No need to innovate, this is to count
+    sKey = 'count';
 
+    // bin and create count using sKey
+    table = Object.values(table.reduce((acc, el) => {
+      const key = `${el[xKey]}_${el[yKey]}`;
+
+      if (!acc[key]) {
+        acc[key] = {
+          id: key,
+          [xKey]: el[xKey],
+          [yKey]: el[yKey],
+          data: []
+        }
+      }
+
+      acc[key].data.push(el);
+
+      return acc;
+    }, {})).map(el => {
+      el[sKey] = el.data.length;
+
+      // select the most popular game of the group to annotate with
+      // use bggRank to determine most popular game
+      let popularIndex = 0;
+      el.data.forEach((game, i) => {
+        if (game.bggRank > el.data[popularIndex].bggRank) {
+          popularIndex = i;
+        }
+      });
+      el.popular = el.data[popularIndex];
+
+      return el;
+    })
+
+    // Use scale square root to have proportional visual size differences, better than linear for large ranges of counts as it provides more discernible differences
+    // https://observablehq.com/@d3/continuous-scales#scale_sqrt
+    size = d3.scaleSqrt().domain(d3.extent(table, d => d[sKey])).range(CIRCLE_SIZE)
   }
-
 
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
