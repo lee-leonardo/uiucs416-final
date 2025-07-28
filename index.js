@@ -39,7 +39,7 @@ const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 
  * @typedef {{ ID: string, Name: string; "Year Published": string, "Min Players": string, "Max Players": string, "Play Time": string, "Min Age": string, "Users Rated": string, "Rating Average": string, "BGG Rank": string, "Complexity Average": string, "Owned Users": string, "Mechanics": string, "Domains": string }} RawDataRow
  */
 /**
- * @typedef {RawDataRow & { yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number, ownedUsers: number }} CsvDataRow
+ * @typedef {RawDataRow & { id: number, yearPublished: number, minPlayers: number, maxPlayers: number, playTime: number, minAge: number, usersRated: number, ratingAverage: number, bggRank: number, complexityAverage: number, ownedUsers: number }} CsvDataRow
  */
 /**
  * @typedef {CsvDataRow & { '' : number }} DateRangeStatistics
@@ -404,6 +404,7 @@ function determineScaleForQual(table, key, type) {
   let skew = measureSkew(table, key)
   let hasZero = table.reduce((acc, d) => acc || d[key] === 0, false)
 
+  // TODO scale finish
   // if (key === 'ratingAverage') {}
 
   if ((domain[0] < 0 || hasZero) && Math.abs(skew) > 0.5) {
@@ -423,6 +424,7 @@ function determineScaleForQual(table, key, type) {
     scale = d3.scaleLog()
     domain = [1, domain[1]]
   }
+  // TODO breaks figure out why
   //  else {
   //   // pad the linear scales so that the minimum and maximum is not directly used cutting off their visibility potentially.
   //   const padding = (domain[1] - domain[0]) * 0.1;
@@ -481,6 +483,8 @@ function renderScatterplot(data, x, y, size, color, keys) {
           return size(d[keys.size])
         })
         .delay((d, i) => i * 10),
+
+        // TODO .on -> event listener for hover state on scatter plots
       update => update.transition()
         .duration(DURATION)
         .ease(d3.easeCircle)
@@ -532,6 +536,9 @@ function renderStep1() {
   // trigger renders
   renderXAxisBarplot(x);
   renderYAxisBarplot(y);
+
+  barplot1Annotations(data, x, y)
+
   return renderBarPlots(data, x, y);
 }
 
@@ -559,6 +566,9 @@ function renderStep2() {
   // trigger renders
   renderXAxisBarplot(x);
   renderYAxisBarplot(y);
+
+  barplot2Annotations(data, x, y)
+
   return renderBarPlots(data, x, y);
 }
 
@@ -615,6 +625,9 @@ function renderStep3() {
 
   // trigger renders
   renderScatterplotAxis(x, y, {});
+
+  scatterplot3Annotation(data, x, y)
+
   return renderScatterplot(table, x, y, size, color, {
     id: 'key',
     x: 'yearPublished',
@@ -643,7 +656,9 @@ function renderFinalScatterplot() {
   let x = d3.scaleLog().domain([1, d3.max(table, d => d[xKey])]).range([MARGIN.left, WIDTH - MARGIN.right]);
   let y = getScaleFromKeyAndType(table, yKey, yType).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
-  // use Bin
+  // TODO finish this section
+  // TODO determine if there is categorical data that would better be served with the binning treatment
+  // use Bin when categorical and categorical are utilized?
   let sKey;
   let size;
   if (xType === DATA_TYPES.CAT && yType === DATA_TYPES.CAT ||
@@ -693,6 +708,7 @@ function renderFinalScatterplot() {
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
   renderScatterplotAxis(x, y, {});
+  hoverAnnotations(table, x, y) // TODO map
   return renderScatterplot(table, x, y, size, color, {
     id,
     x: xKey,
@@ -769,8 +785,7 @@ function updateStateFromPage() {
       .remove()
   }
 
-
-  // TODO page == 2 disable for controsl
+  // TODO page == 2 disable for controls?
   if (page == 3) {
     document.getElementById('controls').classList.remove('hidden')
     freeNav = true;
@@ -804,6 +819,7 @@ function flipAxes() {
   yOptions.value = temp;
 
   // TODO trigger
+  renderFinalScatterplot()
 }
 
 function setupEvents() {
@@ -816,6 +832,226 @@ function selectChange(event) {
   console.log(event, event.target.id, event.target.value);
 
   // TODO trigger
+  renderFinalScatterplot()
+}
+
+/**
+ * Annotations
+ */
+
+function badgeAnnotations(annotations, x, y, keys) {
+  const type = d3.annotationBadge
+
+  const makeAnnotations = d3.annotation()
+    .notePadding(15)
+    .type(type)
+    .accessors({
+      x: d => x(d[keys.x]),
+      y: d => y(d[keys.y])
+    })
+    .annotations(annotations);
+
+  // clear the old annotations
+  d3.select('#badge').selectAll('.annotation').remove();
+
+  // modify this annotation
+  d3.select('#badge').call(makeAnnotations)
+}
+
+function hoverAnnotations(annotations, x, y, keys) {
+  const type = d3.annotationCallout
+
+  const makeAnnotations = d3.annotation()
+    .notePadding(15)
+    .type(type)
+    .annotations(annotations);;
+
+  d3.select('#hover').selectAll('.annotations').remove();
+
+  d3.select('#hover').call(makeAnnotations)
+}
+
+function barplot1Annotations(data, x, y) {
+  // TODO fill out data for annotations
+  // data for annotations
+
+
+  // Chaturanga is considered to be the first chess like game 650
+
+  // Chess was invented in 1475
+  // Charades was first recorded to be played in 1550
+  // An enduring card game Cribbage was invented in 1630,
+  const annotations = [
+    {
+      note: {
+        title: 'Senet -3500 BCE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'the first game in recorded history in the board game geek database'
+      },
+      subject: {
+        text: '1'
+      },
+      data: { "Name": "Senet", "Bin": "[-3500, -2000)", "Year Published": "-3500.0", "Users Rated": "664", "Owned Users": "1343.0", "Complexity Average": "1.48", "Mechanics": "Dice Rolling, Roll / Spin and Move", count: 5 },
+    },
+    {
+      note: {
+        title: 'Chaturanga 650 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'the earliest form of chess'
+      },
+      subject: {
+        text: '2'
+      },
+      data: { "Name": "Chaturanga", "Bin": "[500, 1000)", "Year Published": "650.0", "Users Rated": "98", "Owned Users": "302.0", "Complexity Average": "2.25", "Mechanics": "Dice Rolling, Grid Movement, Player Elimination", count: 2 },
+    },
+    {
+      note: {
+        title: 'Chess 1475 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'formalized and modernized into the game it is today'
+      },
+      subject: {
+        text: '3'
+      },
+      data: { "Name": "Chess", "Bin": "[1400, 1500)", "Year Published": "1475.0", "Users Rated": "28745", "Owned Users": "40068.0", "Complexity Average": "3.7", "Mechanics": "Grid Movement, Pattern Movement, Square Grid, Static Capture", count: 8 },
+    },
+    {
+      note: {
+        title: 'Charades 1550 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'a classic that pantomimes throughout the ages.'
+      },
+      subject: {
+        text: '4'
+      },
+      data: { "Name": "Charades", "Bin": "[1500, 1600)", "Year Published": "1550.0", "Users Rated": "494", "Owned Users": "352.0", "Complexity Average": "1.1", "Mechanics": "Acting", count: 8 },
+    },
+    {
+      note: {
+        title: 'Cribbage 1630 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'one of the earliest card games with the modern playing card deck'
+      },
+      subject: {
+        text: '5'
+      },
+      data: { "Name": "Cribbage", "Bin": "[1600, 1700)", "Year Published": "1630.0", "Users Rated": "8302", "Owned Users": "12471.0", "Complexity Average": "1.9", "Mechanics": "Hand Management", count: 9 }
+    },
+  ]
+
+  badgeAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
+  hoverAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
+}
+
+function barplot2Annotations(data, x, y) {
+  // Pachisi which inspired the game design of Sorry! was invented in 400
+  // Go-moku 700, five in a row, is recoreded played but not formalized until the 1700s, more modern variants include Pente
+  // Craps 1125
+  // Checkers 1150
+  // Tarot became popular from folk religions in 1425
+  // Blackjack 1700
+  // Poker 1810
+  // Von Reiswitz formalized a war game kriegspiele in 1824, this was inspired by simulations ran by napoleon during the height of his fame.
+  // Catan 1995 one of the most famous board games that is considered to have sparked the renaissance.
+
+  const annotations = [
+    {
+      note: {
+        title: 'Pachisi 400 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'Described in the mythic epic the Mahabarata, Pachisi is beyond myth.'
+      },
+      subject: {
+        text: '1'
+      },
+      data: { "Name": "Pachisi", "Bin": "[0, 1000)", "Year Published": "400.0", "Users Rated": "4476", "Owned Users": "7349.0", "Complexity Average": "1.21", "Mechanics": "Dice Rolling, Race, Roll / Spin and Move, Static Capture, Team-Based Game" }
+    },
+    {
+      note: {
+        title: 'Go-moku (Five in a Row) 700 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'not formalized until the 1700s, but influential for games such as Go'
+      },
+      subject: {
+        text: '2'
+      },
+      data: { "Name": "Go-Moku", "Bin": "[0, 1000)", "Year Published": "700.0", "Users Rated": "595", "Owned Users": "518.0", "Complexity Average": "1.88", "Mechanics": "Pattern Building" }
+    },
+    {
+      note: {
+        title: 'Craps 1125 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'people have been addicted to this game for almost a millenia'
+      },
+      subject: {
+        text: '3'
+      },
+      data: { "Name": "Craps", "Bin": "[1000, 1500)", "Year Published": "1125.0", "Users Rated": "284", "Owned Users": "183.0", "Complexity Average": "1.79", "Mechanics": "Betting and Bluffing, Dice Rolling" }
+    },
+    {
+      note: {
+        title: 'Checkers 1150 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'people have been addicted to this game for almost a millenia'
+      },
+      subject: {
+        text: '4'
+      },
+      data: { "Name": "Checkers", "Bin": "[1000, 1500)", "Year Published": "1150.0", "Users Rated": "7182", "Owned Users": "8701.0", "Complexity Average": "1.77", "Mechanics": "Grid Movement, Pattern Movement, Square Grid, Static Capture" }
+    },
+    {
+      note: {
+        title: 'Blackjack 1700 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'people have been addicted to this game for almost a millenia'
+      },
+      subject: {
+        text: '5'
+      },
+      data: { "Name": "Blackjack", "Bin": "[1500, 1750)", "Year Published": "1700.0", "Users Rated": "1568", "Owned Users": "596.0", "Complexity Average": "1.5", "Mechanics": "Betting and Bluffing, Push Your Luck" }
+    },
+    {
+      note: {
+        title: 'Poker 1810 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: "not texas hold'em though"
+      },
+      subject: {
+        text: '6'
+      },
+      data: { "Name": "Poker", "Bin": "[1800, 1825)", "Year Published": "1810.0", "Users Rated": "9276", "Owned Users": "7978.0", "Complexity Average": "2.45", "Mechanics": "Betting and Bluffing, Player Elimination, Set Collection" }
+    },
+    {
+      note: {
+        title: 'Catan 1995 CE',
+        bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
+        label: 'a game that kicked off a new renaissance of board gaming'
+      },
+      subject: {
+        text: '7'
+      },
+      data: { "Name": "Catan", "Bin": "[1995, 2000)", "Year Published": "1995.0", "Users Rated": "101510", "Owned Users": "154531.0", "Complexity Average": "2.32", "Mechanics": "Dice Rolling, Hexagon Grid, Income, Modular Board, Network and Route Building, Race, Random Production, Trading, Variable Set-up" }
+    },
+  ]
+
+  badgeAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
+  hoverAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
+}
+
+function scatterplot3Annotation(data, x, y) {
+
+  // TODO
+  const annotations = [{}]
+  badgeAnnotations(annotations, x, y)
+
+  // Just a helper to get a user to click on a bubble and hover over it, this leads to natural discovery of other bubbles being hoverable
+  scatterplotAnnotations(data, x, y)
+}
+
+function scatterplotAnnotations(data, x, y) {
+
+  // Only hover state
+
 }
 
 
