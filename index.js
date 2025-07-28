@@ -374,13 +374,19 @@ function getScaleFromKeyAndType(table, key, type) {
       break;
     case DATA_TYPES.CAT:
     case DATA_TYPES.ORD:
+      // sort the values before setting ordinal
+      let values = table.map(d => d[key]);
+      values.sort();
+
       scale = d3.scalePoint();
-      domain = d3.union(table.map(d => d[key]));
+      domain = d3.union(values);
       break;
     case DATA_TYPES.QUANT:
     case DATA_TYPES.FIELD:
     default:
-      ({ scale, domain }) = determineScaleForQual(table, key, type)
+      det = determineScaleForQual(table, key, type)
+      scale = det.scale;
+      domain = det.domain;
       break;
   }
 
@@ -415,6 +421,7 @@ function determineScaleForQual(table, key, type) {
   } else if (1 <= skew) {
     // large right skew
     scale = d3.scaleLog()
+    domain = [1, domain[1]]
   }
   //  else {
   //   // pad the linear scales so that the minimum and maximum is not directly used cutting off their visibility potentially.
