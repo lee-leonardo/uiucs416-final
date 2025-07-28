@@ -840,8 +840,6 @@ function selectChange(event) {
  */
 
 function badgeAnnotations(annotations, x, y, keys) {
-  const type = d3.annotationBadge
-
   const notes = annotations.map((note, i) => {
     note.subject = {
       text: `${i+1}`
@@ -851,7 +849,7 @@ function badgeAnnotations(annotations, x, y, keys) {
 
   const makeAnnotations = d3.annotation()
     .notePadding(15)
-    .type(type)
+    .type(d3.annotationBadge)
     .accessors({
       x: d => x(d[keys.x]),
       y: d => y(d[keys.y])
@@ -866,14 +864,12 @@ function badgeAnnotations(annotations, x, y, keys) {
 }
 
 function hoverAnnotations(annotations, x, y, keys) {
-  const type = d3.annotationCallout
-
   const makeAnnotations = d3.annotation()
     .notePadding(15)
-    .type(type)
+    .type(d3.annotationCallout)
     .annotations(annotations);
 
-  d3.select('#hover').selectAll('.annotations').remove();
+  d3.select('#hover').selectAll('.annotation').remove();
 
   d3.select('#hover')
     .call(makeAnnotations)
@@ -895,7 +891,7 @@ function barplot1Annotations(data, x, y) {
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'the earliest form of chess'
       },
-      data: { "Name": "Chaturanga", "Bin": "[500, 1000)", "Year Published": "650.0", "Users Rated": "98", "Owned Users": "302.0", "Complexity Average": "2.25", "Mechanics": "Dice Rolling, Grid Movement, Player Elimination", count: 2 },
+      data: { "Name": "Chaturanga", "Bin": "[500, 1000)", "Year Published": "650.0", "Users Rated": "98", "Owned Users": "302.0", "Complexity Average": "2.25", "Mechanics": "Dice Rolling, Grid Movement, Player Elimination", count: 7 },
     },
     {
       note: {
