@@ -842,6 +842,13 @@ function selectChange(event) {
 function badgeAnnotations(annotations, x, y, keys) {
   const type = d3.annotationBadge
 
+  const notes = annotations.map((note, i) => {
+    note.subject = {
+      text: `${i+1}`
+    }
+    return note
+  })
+
   const makeAnnotations = d3.annotation()
     .notePadding(15)
     .type(type)
@@ -849,7 +856,7 @@ function badgeAnnotations(annotations, x, y, keys) {
       x: d => x(d[keys.x]),
       y: d => y(d[keys.y])
     })
-    .annotations(annotations);
+    .annotations(notes);
 
   // clear the old annotations
   d3.select('#badge').selectAll('.annotation').remove();
@@ -864,32 +871,21 @@ function hoverAnnotations(annotations, x, y, keys) {
   const makeAnnotations = d3.annotation()
     .notePadding(15)
     .type(type)
-    .annotations(annotations);;
+    .annotations(annotations);
 
   d3.select('#hover').selectAll('.annotations').remove();
 
-  d3.select('#hover').call(makeAnnotations)
+  d3.select('#hover')
+    .call(makeAnnotations)
 }
 
 function barplot1Annotations(data, x, y) {
-  // TODO fill out data for annotations
-  // data for annotations
-
-
-  // Chaturanga is considered to be the first chess like game 650
-
-  // Chess was invented in 1475
-  // Charades was first recorded to be played in 1550
-  // An enduring card game Cribbage was invented in 1630,
   const annotations = [
     {
       note: {
         title: 'Senet -3500 BCE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'the first game in recorded history in the board game geek database'
-      },
-      subject: {
-        text: '1'
       },
       data: { "Name": "Senet", "Bin": "[-3500, -2000)", "Year Published": "-3500.0", "Users Rated": "664", "Owned Users": "1343.0", "Complexity Average": "1.48", "Mechanics": "Dice Rolling, Roll / Spin and Move", count: 5 },
     },
@@ -899,9 +895,6 @@ function barplot1Annotations(data, x, y) {
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'the earliest form of chess'
       },
-      subject: {
-        text: '2'
-      },
       data: { "Name": "Chaturanga", "Bin": "[500, 1000)", "Year Published": "650.0", "Users Rated": "98", "Owned Users": "302.0", "Complexity Average": "2.25", "Mechanics": "Dice Rolling, Grid Movement, Player Elimination", count: 2 },
     },
     {
@@ -909,9 +902,6 @@ function barplot1Annotations(data, x, y) {
         title: 'Chess 1475 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'formalized and modernized into the game it is today'
-      },
-      subject: {
-        text: '3'
       },
       data: { "Name": "Chess", "Bin": "[1400, 1500)", "Year Published": "1475.0", "Users Rated": "28745", "Owned Users": "40068.0", "Complexity Average": "3.7", "Mechanics": "Grid Movement, Pattern Movement, Square Grid, Static Capture", count: 8 },
     },
@@ -921,9 +911,6 @@ function barplot1Annotations(data, x, y) {
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'a classic that pantomimes throughout the ages.'
       },
-      subject: {
-        text: '4'
-      },
       data: { "Name": "Charades", "Bin": "[1500, 1600)", "Year Published": "1550.0", "Users Rated": "494", "Owned Users": "352.0", "Complexity Average": "1.1", "Mechanics": "Acting", count: 8 },
     },
     {
@@ -931,9 +918,6 @@ function barplot1Annotations(data, x, y) {
         title: 'Cribbage 1630 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'one of the earliest card games with the modern playing card deck'
-      },
-      subject: {
-        text: '5'
       },
       data: { "Name": "Cribbage", "Bin": "[1600, 1700)", "Year Published": "1630.0", "Users Rated": "8302", "Owned Users": "12471.0", "Complexity Average": "1.9", "Mechanics": "Hand Management", count: 9 }
     },
@@ -944,25 +928,12 @@ function barplot1Annotations(data, x, y) {
 }
 
 function barplot2Annotations(data, x, y) {
-  // Pachisi which inspired the game design of Sorry! was invented in 400
-  // Go-moku 700, five in a row, is recoreded played but not formalized until the 1700s, more modern variants include Pente
-  // Craps 1125
-  // Checkers 1150
-  // Tarot became popular from folk religions in 1425
-  // Blackjack 1700
-  // Poker 1810
-  // Von Reiswitz formalized a war game kriegspiele in 1824, this was inspired by simulations ran by napoleon during the height of his fame.
-  // Catan 1995 one of the most famous board games that is considered to have sparked the renaissance.
-
   const annotations = [
     {
       note: {
         title: 'Pachisi 400 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'Described in the mythic epic the Mahabarata, Pachisi is beyond myth.'
-      },
-      subject: {
-        text: '1'
       },
       data: { "Name": "Pachisi", "Bin": "[0, 1000)", "Year Published": "400.0", "Users Rated": "4476", "Owned Users": "7349.0", "Complexity Average": "1.21", "Mechanics": "Dice Rolling, Race, Roll / Spin and Move, Static Capture, Team-Based Game", count: 70 }
     },
@@ -972,9 +943,6 @@ function barplot2Annotations(data, x, y) {
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'a western staple, much like chess'
       },
-      subject: {
-        text: '2'
-      },
       data: { "Name": "Checkers", "Bin": "[1000, 1500)", "Year Published": "1150.0", "Users Rated": "7182", "Owned Users": "8701.0", "Complexity Average": "1.77", "Mechanics": "Grid Movement, Pattern Movement, Square Grid, Static Capture", count: 130 }
     },
     {
@@ -982,9 +950,6 @@ function barplot2Annotations(data, x, y) {
         title: 'Blackjack 1700 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'people have been addicted to this game for almost a millenia'
-      },
-      subject: {
-        text: '3'
       },
       data: { "Name": "Blackjack", "Bin": "[1500, 1750)", "Year Published": "1700.0", "Users Rated": "1568", "Owned Users": "596.0", "Complexity Average": "1.5", "Mechanics": "Betting and Bluffing, Push Your Luck", count: 70 }
     },
@@ -994,9 +959,6 @@ function barplot2Annotations(data, x, y) {
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: "not texas hold'em though"
       },
-      subject: {
-        text: '4'
-      },
       data: { "Name": "Poker", "Bin": "[1800, 1825)", "Year Published": "1810.0", "Users Rated": "9276", "Owned Users": "7978.0", "Complexity Average": "2.45", "Mechanics": "Betting and Bluffing, Player Elimination, Set Collection", count: 70 }
     },
     {
@@ -1004,9 +966,6 @@ function barplot2Annotations(data, x, y) {
         title: 'Catan 1995 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
         label: 'a game that kicked off a new renaissance of board gaming'
-      },
-      subject: {
-        text: '5'
       },
       data: { "Name": "Catan", "Bin": "[1995, 2000)", "Year Published": "1995.0", "Users Rated": "101510", "Owned Users": "154531.0", "Complexity Average": "2.32", "Mechanics": "Dice Rolling, Hexagon Grid, Income, Modular Board, Network and Route Building, Race, Random Production, Trading, Variable Set-up", count: 1163 }
     },
