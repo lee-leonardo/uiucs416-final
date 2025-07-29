@@ -1,12 +1,12 @@
 /**
  * @file This file is designed to initialize the view and
  */
-const HEIGHT = 600;
-const WIDTH = 800;
+const HEIGHT = 700;
+const WIDTH = 1000;
 const DEFAULT_MARGIN = 80;
 const MARGIN = {
   top: DEFAULT_MARGIN,
-  right: DEFAULT_MARGIN,
+  right: DEFAULT_MARGIN + 120,
   bottom: DEFAULT_MARGIN * 1.5,
   left: DEFAULT_MARGIN
 };
@@ -522,6 +522,8 @@ function renderScatterplot(data, x, y, size, color, keys) {
         .attr('cy', d => y(d[keys.y]))
         .attr('r', 0)
         .attr('fill', d => color(d[keys.color]))
+        .on('mouseover', (e, d) => scatterPlotMouseOver(e, d, x, y, size, color, keys))
+        .on('mouseout', (e, d) => scatterPlotMouseOut(e, d, x, y, size, color, keys))
         .transition()
         .duration(DURATION)
         .ease(d3.easeBounce)
@@ -530,8 +532,6 @@ function renderScatterplot(data, x, y, size, color, keys) {
           return size(d[keys.size])
         })
         .delay((d, i) => i * 10),
-
-        // TODO .on -> event listener for hover state on scatter plots
       update => update.transition()
         .duration(DURATION)
         .ease(d3.easeCircle)
@@ -972,13 +972,6 @@ function mapHoverAnnotation(data, note, x, y, keys) {
 /**
  *
  */
-function radiusAnnotations(annotations, x, y, keys) {
-
-}
-
-/**
- *
- */
 function barplot1Annotations(data, x, y) {
   const annotations = [
     {
@@ -1106,8 +1099,51 @@ function scatterplot3Annotation(data, x, y, size) {
   d3.selectAll('.scatter')
 }
 
-function dynamicScatterplotAnnotation(data, x, y, keys) {
+/**
+ *
+ */
+function scatterPlotMouseOver(event, data, x, y, size, color, keys) {
+  let source;
+  let title;
+  if (data.count && data.popular) {
+    source = data.popular
+    title = `Most Popular Title: ${source.Name}`
+  } else {
+    source = data
+    title = source.Name
+  }
 
+  const annotation = {
+    data,
+    note: {
+      title,
+      label: `Published in ${source.yearPublished}, this ${source.Domains} takes around ${source.playTime} minutes to play. Utilizes mechanics such as ${source.Mechanics}`
+    }
+  }
+
+  dynamicScatterplotAnnotation(annotation, x, y, keys)
+}
+
+function scatterPlotMouseOut(event, data, x, y, size, color, keys) {
+  if (STATE.hoverId === data[keys.id]) return; // escape
+
+  clearHoverAnnotations();
+}
+
+function dynamicScatterplotAnnotation(data, x, y, keys) {
+  const notes = [mapHoverAnnotation(data.data, data.note, x, y, keys)];
+
+  console.log(notes)
+
+  const makeAnnotations = d3.annotation()
+    .notePadding(15)
+    .type(d3.annotationCalloutElbow)
+    .annotations(notes);
+
+  d3.select('#hover')
+    .call(makeAnnotations)
+
+  STATE.hoverId = data[keys.id]
 }
 
 
