@@ -23,3 +23,23 @@ span {
 .hidden {
   display: none;
 }
+
+.axis-label {
+  font-weight: bold;
+}
+
+/* Annotation related styling */
+.annotation.callout text {
+  fill: #00202e;
+}
+
+.annotation-connector, .note-line, .annotation.callout.circle .annotation-subject {
+  stroke: #00202e;
+  stroke-opacity: 1;
+}
+
+.annotation-note-bg {
+  background-color: #fbf2c4;
+  fill: #fbf2c4;
+  fill-opacity: 0.7;
+}
