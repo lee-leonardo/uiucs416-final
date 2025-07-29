@@ -7,7 +7,7 @@ const DEFAULT_MARGIN = 80;
 const MARGIN = {
   top: DEFAULT_MARGIN,
   right: DEFAULT_MARGIN,
-  bottom: DEFAULT_MARGIN,
+  bottom: DEFAULT_MARGIN * 1.5,
   left: DEFAULT_MARGIN
 };
 const TOOLTIP_LENGTH = 50;
@@ -204,10 +204,12 @@ function getAnnotations() {
  */
 function renderYAxisBarplot(y, label) {
   getYAxis()
-    .attr("transform", `translate(${DEFAULT_MARGIN}, 0)`)
+    .attr("transform", `translate(${MARGIN.left}, 0)`)
     .transition()
     .delay(DURATION)
     .call(d3.axisLeft(y))
+
+  renderLabel(label, 'left')
 
   return {
     y
@@ -219,13 +221,15 @@ function renderYAxisBarplot(y, label) {
  */
 function renderXAxisBarplot(x, label) {
   getXAxis()
-    .attr("transform", `translate(0, ${HEIGHT - DEFAULT_MARGIN})`)
+    .attr("transform", `translate(0, ${HEIGHT - MARGIN.bottom})`)
     .transition()
     .delay(DURATION)
     .call(d3.axisBottom(x).tickFormat(formatYearRangeToLabel))//.tickSizeOuter(0))
     .selectAll("text")
     .attr("transform", "rotate(-45)")
     .style("text-anchor", "end");
+
+  renderLabel(label, 'bottom')
 
   return {
     x
@@ -239,7 +243,7 @@ function renderXAxisBarplot(x, label) {
  */
 function renderScatterplotAxis(x, y, options) {
   let xAxis = getXAxis()
-    .attr("transform", `translate(0, ${HEIGHT - DEFAULT_MARGIN})`)
+    .attr("transform", `translate(0, ${HEIGHT - MARGIN.bottom})`)
     .transition()
     .delay(DURATION)
     .call(d3.axisBottom(x))
@@ -249,7 +253,7 @@ function renderScatterplotAxis(x, y, options) {
     .style("text-anchor", "end");
 
   let yAxis = getYAxis()
-    .attr("transform", `translate(${DEFAULT_MARGIN}, 0)`)
+    .attr("transform", `translate(${MARGIN.left}, 0)`)
     .transition()
     .delay(DURATION)
     .call(d3.axisLeft(y))
@@ -258,6 +262,42 @@ function renderScatterplotAxis(x, y, options) {
     x,
     y,
     options
+  }
+}
+
+/**
+ *
+ * @param {string} labelTitle
+ * @param {'left' | 'bottom' | 'right' | 'top'} axis
+ */
+function renderLabel(labelTitle, axis) {
+  const svg = getSvg()
+
+  if (axis === 'left') {
+    let left = svg.select('.axis-label.left')
+
+    if (left.empty()) {
+      left = svg
+        .append("text")
+        .attr("class", "axis-label left")
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -350)
+        .attr('y', MARGIN.left / 4)
+    }
+
+    left.text(labelTitle)
+  } else if (axis === 'bottom') {
+    let bottom = svg.select('.axis-label.bottom')
+
+    if (bottom.empty()) {
+      bottom = svg
+        .append("text")
+        .attr("class", "axis-label bottom")
+        .attr('x', 350)
+        .attr('y', HEIGHT - MARGIN.bottom / 3)
+    }
+
+    bottom.text(labelTitle)
   }
 }
 
@@ -274,7 +314,7 @@ function renderBarPlots(data, x, y) {
         .attr('x', d => x(d.bin))
         .attr('width', x.bandwidth())
         // TODO transition this to use margin?
-        .attr('y', d => HEIGHT - MARGIN.top)
+        .attr('y', d => HEIGHT - MARGIN.bottom)
         .attr('height', _ => 0)
         // TODO move these to styles? These will not work with stacks?
         .attr("fill", "#4A90E2")
@@ -633,7 +673,9 @@ function renderStep3() {
   // trigger renders
   renderScatterplotAxis(x, y, {});
 
-  scatterplot3Annotation(data, x, y)
+  const bubble = Math.floor(Math.random() * table.length);
+
+  scatterplot3Annotation(table[bubble], x, y, size)
 
   return renderScatterplot(table, x, y, size, color, {
     id: 'key',
@@ -715,7 +757,7 @@ function renderFinalScatterplot() {
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
   renderScatterplotAxis(x, y, {});
-  hoverAnnotations(table, x, y) // TODO map
+
   return renderScatterplot(table, x, y, size, color, {
     id,
     x: xKey,
@@ -1035,25 +1077,33 @@ function barplot2Annotations(data, x, y) {
 }
 
 /**
- *
+ * Uses a radius annotation within the dover space to
  */
-function scatterplot3Annotation(data, x, y) {
+function scatterplot3Annotation(data, x, y, size) {
+  const note = mapHoverAnnotation(
+    data,
+    {
+    label: 'By hovering you can look at more information!',
+    title: 'Scatter Plot interactions 101'
+    },
+    x,
+    y,
+    { x: 'yearPublished', y: 'count' }
+  );
 
-  // TODO
-  const annotations = [{}]
-  badgeAnnotations(annotations, x, y)
+  note.subject = {
+    radius: size(data.minPlayers)
+  }
 
-  // Just a helper to get a user to click on a bubble and hover over it, this leads to natural discovery of other bubbles being hoverable
-  scatterplotAnnotations(data, x, y)
-}
+  const makeAnnotations = d3.annotation()
+    .notePadding(15)
+    .type(d3.annotationCalloutCircle)
+    .annotations([note]);
 
-/**
- *
- */
-function scatterplotAnnotations(data, x, y) {
+  d3.select('#hover').call(makeAnnotations)
 
-  // Only hover state
-
+  // TODO move this to scatterplot join
+  d3.selectAll('.scatter')
 }
 
 function dynamicScatterplotAnnotation(data, x, y, keys) {
