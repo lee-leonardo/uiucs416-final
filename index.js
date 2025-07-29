@@ -10,6 +10,7 @@ const MARGIN = {
   bottom: DEFAULT_MARGIN,
   left: DEFAULT_MARGIN
 };
+const TOOLTIP_LENGTH = 50;
 const CIRCLE_SIZE = [1, 16];
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
@@ -32,6 +33,12 @@ const DATA_TYPES = {
 // set to 11 bins to support the coloration
 const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 2015, 2016, 2017, 2018, 2019, 2020];
 
+// State trackers to help with things
+const STATE = {
+  hoverId: -1,
+  page: 0,
+  freeNav: false
+}
 
 // ID, Name, Year Published, Min Players, Max Players, Play Time, Min Age, Users Rated, Rating Average, BGG Rank, Complexity Average, Owned Users, Mechanics, Domains
 
@@ -522,7 +529,7 @@ function renderScatterplot(data, x, y, size, color, keys) {
  * Data from -3500BCE to 1800CE
  */
 function renderStep1() {
-  page = 0;
+  STATE.page = 0;
   updateStateFromPage();
 
   // Table data, but we will map to a simpler data structure for the bar plot
@@ -546,13 +553,13 @@ function renderStep1() {
 * Data from -3500BCE to 2000CE
  */
 function renderStep2() {
-  if (page >= 2) {
+  if (STATE.page >= 2) {
     getSvg()
       .selectAll(".scatter")
       .transition()
       .remove();
   }
-  page = 1;
+  STATE.page = 1;
   updateStateFromPage();
 
   // Table data, but we will map to a simpler data structure for the bar plot
@@ -576,7 +583,7 @@ function renderStep2() {
  * Data from 2000 to 2020
  */
 function renderStep3() {
-  page = 2;
+  STATE.page = 2;
   updateStateFromPage();
 
   let table = get(2)
@@ -641,7 +648,7 @@ function renderStep3() {
  * Scatterplot to display data in a way with more pivotable characteristics.
  */
 function renderFinalScatterplot() {
-  page = 3;
+  STATE.page = 3;
   updateStateFromPage();
 
   let table = get(2).filter(el => (el['Year Published']) < 2021).map(mapRawData)
@@ -722,47 +729,44 @@ function renderFinalScatterplot() {
  * Controls
  * -------------------
  */
-let page = 0;
-let freeNav = false;
-
 function navigateBackward() {
-  if (page === 0) return;
+  if (STATE.page === 0) return;
 
-  page--;
+  STATE.page--;
   navigateRender();
 }
 
 function navigateForward() {
-  if (page === 3) return;
+  if (STATE.page === 3) return;
 
-  page++;
+  STATE.page++;
   navigateRender();
 }
 
 function navigateRender() {
-  if (page === 0) {
+  if (STATE.page === 0) {
     return renderStep1()
   }
-  if (page == 1) {
+  if (STATE.page == 1) {
     return renderStep2()
   }
-  if (page == 2) {
+  if (STATE.page == 2) {
     return renderStep3()
   }
-  if (page == 3) {
+  if (STATE.page == 3) {
     return renderFinalScatterplot()
   }
 }
 
 function reset() {
-  page = 0;
-  freeNav = false;
+  STATE.page = 0;
+  STATE.freeNav = false;
 
   return renderStep1();
 }
 
 function updateStateFromPage() {
-  if (page <= 1) {
+  if (STATE.page <= 1) {
     getSvg()
       .selectAll(".scatter")
       .transition()
@@ -773,7 +777,7 @@ function updateStateFromPage() {
       .remove()
   }
 
-  if (page >= 2) {
+  if (STATE.page >= 2) {
     getSvg()
       .selectAll(".bar")
       .transition()
@@ -785,28 +789,31 @@ function updateStateFromPage() {
       .remove()
   }
 
-  // TODO page == 2 disable for controls?
-  if (page == 3) {
+  // TODO STATE.page == 2 disable for controls?
+  if (STATE.page == 3) {
     document.getElementById('controls').classList.remove('hidden')
-    freeNav = true;
+    STATE.freeNav = true;
   } else {
     document.getElementById('controls').classList.add('hidden')
   }
 
-  document.getElementById('last').disabled = !freeNav || page === 0;
-  document.getElementById('next').disabled = page > 2;
+  document.getElementById('last').disabled = !STATE.freeNav || STATE.page === 0;
+  document.getElementById('next').disabled = STATE.page > 2;
 
   // force users to go forward on the path until completion.
   // Disable the steps when they are less than the
   for (let i = 0; i < 4; i++) {
-    document.getElementById(`step${i + 1}`).disabled = !freeNav && i < page;
+    document.getElementById(`step${i + 1}`).disabled = !STATE.freeNav && i < STATE.page;
 
-    if (i < page || i > page) {
+    if (i < STATE.page || i > STATE.page) {
       document.getElementById(`desc${i + 1}`).classList.add('hidden');
     } else {
       document.getElementById(`desc${i + 1}`).classList.remove('hidden');
     }
   }
+
+  // Clear hovers and badges
+  clearHoverAnnotations()
 }
 
 function flipAxes() {
@@ -839,21 +846,25 @@ function selectChange(event) {
  * Annotations
  */
 
+/**
+ * Creates badge annotation with event listener to hover and display a tooltip.
+ */
 function badgeAnnotations(annotations, x, y, keys) {
   const notes = annotations.map((note, i) => {
     note.subject = {
       text: `${i+1}`
-    }
+    };
+    note.hoverId = i,
+    note.className = `note-${i}`
+    note.x = x(note.data[keys.x])
+    note.y = y(note.data[keys.y])
+
     return note
   })
 
   const makeAnnotations = d3.annotation()
     .notePadding(15)
     .type(d3.annotationBadge)
-    .accessors({
-      x: d => x(d[keys.x]),
-      y: d => y(d[keys.y])
-    })
     .annotations(notes);
 
   // clear the old annotations
@@ -861,20 +872,67 @@ function badgeAnnotations(annotations, x, y, keys) {
 
   // modify this annotation
   d3.select('#badge').call(makeAnnotations)
+
+  // add hover state here
+  d3.select('#badge').selectAll('.annotation').on('mouseover', (e,d) => {
+    dynamicHoverAnnotation(d.data, d.note, x, y, keys)
+  }).on('mouseout', (e,d) => {
+    if (STATE.hoverId === d.hoverId) return; // escape
+
+    clearHoverAnnotations(d.data, d.note)
+  })
 }
 
-function hoverAnnotations(annotations, x, y, keys) {
+/**
+ *
+ */
+function dynamicHoverAnnotation(data, note, x, y, keys) {
+  const notes = [mapHoverAnnotation(data, note, x, y, keys)];
+
+  console.log(notes)
+
   const makeAnnotations = d3.annotation()
     .notePadding(15)
-    .type(d3.annotationCallout)
-    .annotations(annotations);
-
-  d3.select('#hover').selectAll('.annotation').remove();
+    .type(d3.annotationCalloutElbow)
+    .annotations(notes);
 
   d3.select('#hover')
     .call(makeAnnotations)
+
+  STATE.hoverId = note.hoverId
 }
 
+function clearHoverAnnotations(data, note) {
+  d3.select('#hover').selectAll('.annotation').remove();
+}
+
+function mapHoverAnnotation(data, note, x, y, keys) {
+  const hx = x(data[keys.x]);
+  const hy = y(data[keys.y]);
+
+  const yMid = (HEIGHT - MARGIN.bottom - MARGIN.top) / 2
+  const xMid = (WIDTH - MARGIN.left - MARGIN.right) / 2
+
+  return {
+    data,
+    note,
+    x: hx,
+    y: hy,
+    dy: TOOLTIP_LENGTH * (hy <= yMid ? 1 : -1),
+    dx: TOOLTIP_LENGTH * (hx <= xMid ? 1 : -1)
+  };
+}
+
+/**
+ *
+ */
+function radiusAnnotations(annotations, x, y, keys) {
+
+}
+
+/**
+ *
+ */
 function barplot1Annotations(data, x, y) {
   const annotations = [
     {
@@ -920,9 +978,11 @@ function barplot1Annotations(data, x, y) {
   ]
 
   badgeAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
-  hoverAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
 }
 
+/**
+ *
+ */
 function barplot2Annotations(data, x, y) {
   const annotations = [
     {
@@ -945,7 +1005,7 @@ function barplot2Annotations(data, x, y) {
       note: {
         title: 'Blackjack 1700 CE',
         bgPadding: { "top": 15, "left": 10, "right": 10, "bottom": 10 },
-        label: 'people have been addicted to this game for almost a millenia'
+        label: 'one of the most enduring games throughout human history'
       },
       data: { "Name": "Blackjack", "Bin": "[1500, 1750)", "Year Published": "1700.0", "Users Rated": "1568", "Owned Users": "596.0", "Complexity Average": "1.5", "Mechanics": "Betting and Bluffing, Push Your Luck", count: 70 }
     },
@@ -968,9 +1028,11 @@ function barplot2Annotations(data, x, y) {
   ]
 
   badgeAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
-  hoverAnnotations(annotations, x, y, { x: 'Bin', y: 'count' })
 }
 
+/**
+ *
+ */
 function scatterplot3Annotation(data, x, y) {
 
   // TODO
@@ -981,9 +1043,16 @@ function scatterplot3Annotation(data, x, y) {
   scatterplotAnnotations(data, x, y)
 }
 
+/**
+ *
+ */
 function scatterplotAnnotations(data, x, y) {
 
   // Only hover state
+
+}
+
+function dynamicScatterplotAnnotation(data, x, y, keys) {
 
 }
 
