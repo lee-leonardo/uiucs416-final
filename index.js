@@ -541,8 +541,8 @@ function renderStep1() {
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // trigger renders
-  renderXAxisBarplot(x);
-  renderYAxisBarplot(y);
+  renderXAxisBarplot(x, 'Year Range');
+  renderYAxisBarplot(y, 'Titles per Year');
 
   barplot1Annotations(data, x, y)
 
@@ -571,8 +571,8 @@ function renderStep2() {
   const y = d3.scaleLinear().domain([0, maxCount]).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // trigger renders
-  renderXAxisBarplot(x);
-  renderYAxisBarplot(y);
+  renderXAxisBarplot(x, 'Year Range');
+  renderYAxisBarplot(y, 'Titles per Year');
 
   barplot2Annotations(data, x, y)
 
@@ -807,12 +807,15 @@ function updateStateFromPage() {
 
     if (i < STATE.page || i > STATE.page) {
       document.getElementById(`desc${i + 1}`).classList.add('hidden');
+      document.getElementById(`title${i + 1}`).classList.add('hidden');
     } else {
       document.getElementById(`desc${i + 1}`).classList.remove('hidden');
+      document.getElementById(`title${i + 1}`).classList.remove('hidden');
     }
   }
 
   // Clear hovers and badges
+  clearBadgeAnnotations()
   clearHoverAnnotations()
 }
 
@@ -888,9 +891,6 @@ function badgeAnnotations(annotations, x, y, keys) {
  */
 function dynamicHoverAnnotation(data, note, x, y, keys) {
   const notes = [mapHoverAnnotation(data, note, x, y, keys)];
-
-  console.log(notes)
-
   const makeAnnotations = d3.annotation()
     .notePadding(15)
     .type(d3.annotationCalloutElbow)
@@ -900,6 +900,10 @@ function dynamicHoverAnnotation(data, note, x, y, keys) {
     .call(makeAnnotations)
 
   STATE.hoverId = note.hoverId
+}
+
+function clearBadgeAnnotations(data, note) {
+  d3.select('#badge').selectAll('.annotation').remove();
 }
 
 function clearHoverAnnotations(data, note) {
