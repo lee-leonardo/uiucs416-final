@@ -11,7 +11,7 @@ const MARGIN = {
   left: DEFAULT_MARGIN
 };
 const TOOLTIP_LENGTH = 50;
-const CIRCLE_SIZE = [1, 16];
+const CIRCLE_SIZE = [2, 20];
 const DURATION = 500;
 const COLOR_PALETTE = d3.schemeSpectral[11]; // https://observablehq.com/@d3/working-with-color
 const COLOR_SCALE = ['#1E88E5', '#D81B60']; // chosen from https://davidmathlogic.com/colorblind/#%23D81B60-%231E88E5-%23FFC107-%23004D40, two colors with high compat with all kinds of color blindness.
@@ -29,6 +29,43 @@ const DATA_TYPES = {
   /** @desc unordered, continous - directions, hues */
   CYC: 'cyclic'
 }
+
+const LABELS = {
+  ID: "ID",
+  Name: "Name",
+  "Year Published": "Year Published",
+  "Min Players": "Min Players",
+  "Max Players": "Max Players",
+  "Play Time": "Play Time",
+  "Min Age": "Min Age",
+  "Users Rated": "Users Rated",
+  "Rating Average": "Rating Average",
+  "BGG Rank": "BGG Rank",
+  "Complexity Average": "Complexity Average",
+  "Owned Users": "Owned Users",
+  "Mechanics": "Mechanics",
+  "Domains": "Domains",
+  // Double mapped for ease of data key mapping to label map
+  id: "ID",
+  yearPublished: "Year Published",
+  minPlayers: "Min Players",
+  maxPlayers: "Max Players",
+  playTime: "Play Time",
+  minAge: "Min Age",
+  usersRated: "Users Rated",
+  ratingAverage: "Rating Average",
+  bggRank: "BGG Rank",
+  complexityAverage: "Complexity Average",
+  ownedUsers: "Owned Users",
+  mechanics: "Mechanics",
+  domains: "Domains",
+  // synthetic
+  count: 'Game Count'
+}
+
+// Populated via data.js
+/** @type {string[]} */
+// let DOMAIN_ORDINAL;
 
 // set to 11 bins to support the coloration
 const YEAR_THRESHOLDS = [-3500, 1970, 1990, 1995, 2000, 2005, 2010, 2012, 2014, 2015, 2016, 2017, 2018, 2019, 2020];
@@ -113,7 +150,10 @@ function mapRawData(row, i) {
     ratingAverage: Number(row['Rating Average']),
     bggRank: Number(row['BGG Rank']),
     complexityAverage: Number(row['Complexity Average']),
-    ownedUsers: Number(row['Owned Users'])
+    ownedUsers: Number(row['Owned Users']),
+    // Just use first for domains for categorizing (to make things simple)
+    domains: row['Domains']?.split(', ')?.[0]
+    // mechanics is omitted as it's too complex for colorization and too nested for ordinal for the assignment (parallel plot, spider, edge, chord, bundle, or cleveland dotplot would be a more better fit)
   }
 }
 
@@ -176,12 +216,29 @@ function getYAxis() {
 
 function getPlot() {
   const plots = getSvg().select('#plots');
-  if (plots.nodes().length) {
-    return plots;
+  if (plots.empty()) {
+    return plots.append('g')
+      .attr('id', 'plots')
   }
 
-  return plots.append('g')
-    .attr('id', 'plots')
+  return plots;
+}
+
+function getLegend() {
+  let legend = getSvg().select('#legend');
+  if (legend.empty()) {
+    legend = legend.append('g')
+      .attr('id', 'legend')
+  }
+
+  if (!legend.attr('width')) {
+    legend = legend
+      .attr('height', HEIGHT)
+      .attr('width', MARGIN.right)
+      .attr('x', WIDTH - MARGIN.right)
+  }
+
+  return legend
 }
 
 function getAnnotations() {
@@ -252,11 +309,15 @@ function renderScatterplotAxis(x, y, options) {
     .attr("transform", "rotate(-45)")
     .style("text-anchor", "end");
 
+  renderLabel(options.xLabel, 'bottom')
+
   let yAxis = getYAxis()
-    .attr("transform", `translate(${MARGIN.left}, 0)`)
-    .transition()
-    .delay(DURATION)
-    .call(d3.axisLeft(y))
+  .attr("transform", `translate(${MARGIN.left}, 0)`)
+  .transition()
+  .delay(DURATION)
+  .call(d3.axisLeft(y))
+
+  renderLabel(options.yLabel, 'left')
 
   return {
     x,
@@ -355,8 +416,10 @@ function renderBarPlots(data, x, y) {
  * @param {string} key
  * @return {{ key: string, type: string }} value
  */
-function valuesFromDropdown(key) {
+function valuesFromDropdown(el) {
   // select type
+  const key = el.value
+  const label = (el.querySelector(`[value="${key}"]`)).text
 
   let type;
   switch (key) {
@@ -402,6 +465,7 @@ function valuesFromDropdown(key) {
   return {
     key,
     type,
+    label,
   }
 }
 
@@ -632,7 +696,7 @@ function renderStep3() {
 
   // Create groupings by year published and the minimum players
   table = Object.values(table.reduce((acc, el) => {
-    const key = `${el.yearPublished}_${el.minPlayers}`;
+    const key = `${el.yearPublished}_${el.minPlayers}_${el.maxPlayers}`;
 
     if (!acc[key]) {
       acc[key] = {
@@ -667,21 +731,27 @@ function renderStep3() {
   xDomain[0] -= 1;
   let x = d3.scaleLinear().domain(xDomain).range([MARGIN.left, WIDTH - MARGIN.right]);
   let y = d3.scaleLog().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
-  let size = d3.scaleSqrt().domain(d3.extent(table, d => d.minPlayers)).range(CIRCLE_SIZE);
+  let size = d3.scaleSqrt().domain(d3.extent(table, d => d.maxPlayers)).range(CIRCLE_SIZE);
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
   // trigger renders
-  renderScatterplotAxis(x, y, {});
+  renderScatterplotAxis(x, y, {
+    xLabel: 'Year Published',
+    yLabel: 'Number Published'
+  });
 
   const bubble = Math.floor(Math.random() * table.length);
 
   scatterplot3Annotation(table[bubble], x, y, size)
 
+  // TODO
+  updateLegend(table, {})
+
   return renderScatterplot(table, x, y, size, color, {
     id: 'key',
     x: 'yearPublished',
     y: 'count',
-    size: 'minPlayers',
+    size: 'maxPlayers',
     color: 'minPlayers',
   });
 }
@@ -695,8 +765,8 @@ function renderFinalScatterplot() {
 
   let table = get(2).filter(el => (el['Year Published']) < 2021).map(mapRawData)
 
-  const { key: xKey, type: xType } = valuesFromDropdown(document.getElementById('x-options').value);
-  const { key: yKey, type: yType } = valuesFromDropdown(document.getElementById('y-options').value);
+  const { key: xKey, type: xType, label: xLabel } = valuesFromDropdown(document.getElementById('x-options'));
+  const { key: yKey, type: yType, label: yLabel } = valuesFromDropdown(document.getElementById('y-options'));
   const cKey = document.getElementById('color-options').value;
 
   let id = 'ID';
@@ -756,7 +826,15 @@ function renderFinalScatterplot() {
 
   let color = d3.scaleOrdinal(COLOR_PALETTE);
 
-  renderScatterplotAxis(x, y, {});
+  renderScatterplotAxis(x, y, {
+    xLabel,
+    yLabel,
+    xType,
+    yType
+  });
+
+  // TODO
+  updateLegend(table, {})
 
   return renderScatterplot(table, x, y, size, color, {
     id,
@@ -956,8 +1034,8 @@ function mapHoverAnnotation(data, note, x, y, keys) {
   const hx = x(data[keys.x]);
   const hy = y(data[keys.y]);
 
-  const yMid = (HEIGHT - MARGIN.bottom - MARGIN.top) / 2
-  const xMid = (WIDTH - MARGIN.left - MARGIN.right) / 2
+  const yMid = (HEIGHT - MARGIN.bottom + MARGIN.top) / 2
+  const xMid = (WIDTH -  MARGIN.right + MARGIN.left) / 2
 
   return {
     data,
@@ -1094,9 +1172,6 @@ function scatterplot3Annotation(data, x, y, size) {
     .annotations([note]);
 
   d3.select('#hover').call(makeAnnotations)
-
-  // TODO move this to scatterplot join
-  d3.selectAll('.scatter')
 }
 
 /**
@@ -1105,19 +1180,26 @@ function scatterplot3Annotation(data, x, y, size) {
 function scatterPlotMouseOver(event, data, x, y, size, color, keys) {
   let source;
   let title;
+  let label;
   if (data.count && data.popular) {
     source = data.popular
-    title = `Most Popular Title: ${source.Name}`
+    title = `(${LABELS[keys.x]}: ${data[keys.x]},
+    ${LABELS[keys.y]}: ${data[keys.y]},
+    ${LABELS[keys.size]}: ${data[keys.size]},
+    ${LABELS[keys.color]}: ${data[keys.color]})
+    `
+    label = `Most Popular Title: ${source.Name} - Mechanics include ${source.playTime}`
   } else {
     source = data
     title = source.Name
+    label = `Published in ${ source.yearPublished }, and plays in about ${ source.playTime } minutes. The game utilizes mechanics such as ${ source.Mechanics } for ${ source.minPlayers } to ${ source.maxPlayers } players.`
   }
 
   const annotation = {
     data,
     note: {
       title,
-      label: `Published in ${source.yearPublished}, this ${source.Domains} takes around ${source.playTime} minutes to play. Utilizes mechanics such as ${source.Mechanics}`
+      label,
     }
   }
 
@@ -1132,9 +1214,6 @@ function scatterPlotMouseOut(event, data, x, y, size, color, keys) {
 
 function dynamicScatterplotAnnotation(data, x, y, keys) {
   const notes = [mapHoverAnnotation(data.data, data.note, x, y, keys)];
-
-  console.log(notes)
-
   const makeAnnotations = d3.annotation()
     .notePadding(15)
     .type(d3.annotationCalloutElbow)
@@ -1146,6 +1225,28 @@ function dynamicScatterplotAnnotation(data, x, y, keys) {
   STATE.hoverId = data[keys.id]
 }
 
+/**
+ * Legend
+ */
+function updateLegend() {
+  switch (STATE.page) {
+    // case 1:
+    //   break;
+    // case 2:
+    //   break;
+    case 3:
+      // Colors
+      getLegend()
+
+      break;
+    case 4:
+      getLegend()
+
+      break;
+    default:
+      break;
+  }
+}
 
 /**
  * Life Cycle
