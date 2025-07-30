@@ -690,6 +690,15 @@ function renderStep3() {
   STATE.page = 2;
   updateStateFromPage();
 
+  const xKey = 'yearPublished'
+  const xLabel = LABELS[xKey]
+  const yKey = 'count'
+  const yLabel = LABELS[yKey]
+  const sKey = 'maxPlayers'
+  const sLabel = LABELS[sKey]
+  const cKey = 'minPlayers'
+  const cLabel = LABELS[cKey]
+
   let table = get(2)
     .filter(el => Number(el['Year Published']) > 1999 && Number(el['Year Published']) < 2021 && Number(el['Year Published']) !== 0)
     .map(mapRawData);
@@ -736,8 +745,8 @@ function renderStep3() {
 
   // trigger renders
   renderScatterplotAxis(x, y, {
-    xLabel: 'Year Published',
-    yLabel: 'Number Published'
+    xLabel,
+    yLabel
   });
 
   const bubble = Math.floor(Math.random() * table.length);
@@ -745,8 +754,12 @@ function renderStep3() {
   scatterplot3Annotation(table[bubble], x, y, size)
 
   updateLegend(table, {
+    sKey,
     sLabel,
-    cLabel
+    size,
+    cKey,
+    cLabel,
+    color
   })
 
   return renderScatterplot(table, x, y, size, color, {
@@ -1236,25 +1249,25 @@ function dynamicScatterplotAnnotation(data, x, y, keys) {
 /**
  * Legend
  * @param {object} data
- * @param {{ sKey: string, size, cKey: string, color }} options
+ * @param {{ sKey: string, size, cKey: string, color, sLabel: string, cLabel: string }} options
  */
 function updateLegend(data, options) {
   switch (STATE.page) {
+    // case 0:
+    //   break;
     // case 1:
     //   break;
-    // case 2:
-    //   break;
-    case 3:
+    case 2:
       // Colors
       getLegend().selectAll('.legend-item').remove()
-      generateSizeLegend(data, options.size, options.sKey)
-      generateColorLegend(data, options.color, options.cKey)
+      generateSizeLegend(data, options)
+      generateColorLegend(data, options)
 
       break;
-    case 4:
+    case 3:
       getLegend().selectAll('.legend-item').remove()
-      generateSizeLegend(data, options.size, options.sKey)
-      generateColorLegend(data, options.color, options.cKey)
+      generateSizeLegend(data, options)
+      generateColorLegend(data, options)
 
       break;
     default:
@@ -1262,13 +1275,13 @@ function updateLegend(data, options) {
   }
 }
 
-function generateSizeLegend(data, size, sKey) {
+function generateSizeLegend(data, options) {
   const elements = [
-    d3.min(data, d => d[sKey]),
-    d3.quantile(data, 0.25, d => d[sKey]),
+    d3.min(data, d => d[options.sKey]),
+    d3.quantile(data, 0.25, d => d[options.sKey]),
     d3.mean(data, d => d[sKey]),
-    d3.quantile(data, 0.75, d => d[sKey]),
-    d3.max(data, d => d[sKey])
+    d3.quantile(data, 0.75, d => d[options.sKey]),
+    d3.max(data, d => d[options.sKey])
   ]
 
   const legend = getLegend()
@@ -1276,7 +1289,7 @@ function generateSizeLegend(data, size, sKey) {
   // TODO is this the right place? Should I place in g?
   let title = legend.append('text')
     .attr('class', 'legend-item title')
-    .text(LABELS[sKey])
+    .text(LABELS[options.sKey])
 
   let item = legend.append('g')
     .attr('class', 'legend-item sizes')
@@ -1285,21 +1298,21 @@ function generateSizeLegend(data, size, sKey) {
 
   // Add circles
   item.append("circle")
-    .attr("cy", d => 200 - scale(d))
-    .attr("r", d => scale(d))
+    .attr("cy", d => 200 - options.size(d))
+    .attr("r", d => options.size(d))
     .attr("stroke", "black")
     .attr("fill", "none");
 
   // Add text labels
   item.append("text")
-    .attr("y", d => 200 - 2 * scale(d) + 3)
+    .attr("y", d => 200 - 2 * options.size(d) + 3)
     .style("dominant-baseline", "hanging")
     .style("text-anchor", "middle")
     .text(d => d);
 }
 
-function generateColorLegend(data, color, cKey) {
-  const values = Array.from(d3.union(data.map(el => el[cKey])))
+function generateColorLegend(data, options) {
+  const values = Array.from(d3.union(data.map(el => el[options.cKey])))
   values.sort()
 
   const legend = getLegend()
@@ -1307,14 +1320,14 @@ function generateColorLegend(data, color, cKey) {
   // TODO is this the right place? Should I place in g?
   let title = legend.append('text')
     .attr('class', 'legend-item title')
-    .text(LABELS[cKey])
+    .text(LABELS[options.cKey])
 
   let item = legend.append('g')
     .attr('class', 'legend-item table')
     .data(values)
     .enter()
 
-  item.append("circle").attr("cx", 8).attr("cy", 0).attr("r", 8).attr("fill", d => color(d)).attr("opacity", 0.7);
+  item.append("circle").attr("cx", 8).attr("cy", 0).attr("r", 8).attr("fill", d => options.color(d)).attr("opacity", 0.7);
   item.append("text").attr("x", 20).attr("y", 0).attr("dy", "0.35em").text(d => d);
 }
 
