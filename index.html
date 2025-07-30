@@ -21,6 +21,15 @@
     <h2 id="title2">Number of Board Games released from -3500 BCE to 1800 CE</h2>
     <h2 id="title3">Released Titles Per Year Per Minimum Player Size from 2000 to 2020 CE</h2>
     <h2 id="title4">Customizable Axes, Size, and Color from -3500 BCE to 2020 CE</h2>
+    <p id="desc1">Board games started off being a tool for learning and entertainment for the wealthy. Used to teach aspects
+      of war or practice anticipating moves of opponents.</p>
+    <p id="desc2">As the middle class came into prominence on the world stage, their capital and free time lead to the
+      acceleration of the development of games.</p>
+    <p id="desc3">This volume of different titles is coupled with the diversification of genres and game mechanics, which
+      lends itself to a rich tapestry of ideas and ludemes.</p>
+    <p id="desc4">Lastly I leave you the reader an ability to play, as "Play is older than culture, for culture, however
+      inadequately defined, always presupposes human society, and animals have not waited for man to teach them their
+      playing." - Huizinga, Homo Ludens</p>
     <div id="main" class="container">
       <svg>
         <g id="plots"></g>
@@ -28,6 +37,7 @@
         <g id="y-axis"></g>
         <g id="badge"></g>
         <g id="hover"></g>
+        <g id="legend"></g>
       </svg>
     </div>
     <div id="controls" class="container">
@@ -63,24 +73,14 @@
       </div>
       <div id="quality" class="container">
         <span>Color options: </span>
-        <select id="color-options" onchange="selectChange()">
-          <option value="Mechanics" selected>Mechanics</option>
-          <option value="Domains">Domains</option>
+        <select id="color-options">
+          <option value="domain">Domains</option>
           <option value="minPlayers">Min Players</option>
           <option value="maxPlayers">Max Players</option>
           <option value="minAge">Min Age</option>
         </select>
       </div>
     </div>
-    <p id="desc1">Board games started off being a tool for learning and entertainment for the wealthy. Used to teach aspects
-      of war or practice anticipating moves of opponents.</p>
-    <p id="desc2">As the middle class came into prominence on the world stage, their capital and free time lead to the
-      acceleration of the development of games.</p>
-    <p id="desc3">This volume of different titles is coupled with the diversification of genres and game mechanics, which
-      lends itself to a rich tapestry of ideas and ludemes.</p>
-    <p id="desc4">Lastly I leave you the reader an ability to play, as "Play is older than culture, for culture, however
-      inadequately defined, always presupposes human society, and animals have not waited for man to teach them their
-      playing." - Huizinga, Homo Ludens</p>
 
     <!-- Libraries used -->
     <script src="https://d3js.org/d3.v7.min.js"></script>

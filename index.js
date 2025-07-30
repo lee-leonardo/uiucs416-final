@@ -58,7 +58,7 @@ const LABELS = {
   complexityAverage: "Complexity Average",
   ownedUsers: "Owned Users",
   mechanics: "Mechanics",
-  domains: "Domains",
+  domain: "Domain",
   // synthetic
   count: 'Game Count'
 }
@@ -152,7 +152,7 @@ function mapRawData(row, i) {
     complexityAverage: Number(row['Complexity Average']),
     ownedUsers: Number(row['Owned Users']),
     // Just use first for domains for categorizing (to make things simple)
-    domains: row['Domains']?.split(', ')?.[0]
+    domain: row['Domains']?.split(', ')?.[0]
     // mechanics is omitted as it's too complex for colorization and too nested for ordinal for the assignment (parallel plot, spider, edge, chord, bundle, or cleveland dotplot would be a more better fit)
   }
 }
@@ -744,8 +744,10 @@ function renderStep3() {
 
   scatterplot3Annotation(table[bubble], x, y, size)
 
-  // TODO
-  updateLegend(table, {})
+  updateLegend(table, {
+    sLabel,
+    cLabel
+  })
 
   return renderScatterplot(table, x, y, size, color, {
     id: 'key',
@@ -767,7 +769,7 @@ function renderFinalScatterplot() {
 
   const { key: xKey, type: xType, label: xLabel } = valuesFromDropdown(document.getElementById('x-options'));
   const { key: yKey, type: yType, label: yLabel } = valuesFromDropdown(document.getElementById('y-options'));
-  const cKey = document.getElementById('color-options').value;
+  const { key: cKey, label: cLabel } = valuesFromDropdown(document.getElementById('color-options'));
 
   let id = 'ID';
   // Determine id via values from the above.
@@ -783,9 +785,12 @@ function renderFinalScatterplot() {
   if (xType === DATA_TYPES.CAT && yType === DATA_TYPES.CAT ||
     xType === DATA_TYPES.ORD && yType === DATA_TYPES.ORD ||
     xType === DATA_TYPES.CAT && yType === DATA_TYPES.ORD ||
-    xType === DATA_TYPES.ORD && yType === DATA_TYPES.CAT) {
+    xType === DATA_TYPES.ORD && yType === DATA_TYPES.CAT ||
+    xType === yType) {
     // No need to innovate, this is to count
     sKey = 'count';
+
+    // TODO filter the data to remove values that are not going to be working for the scale
 
     // bin and create count using sKey
     table = Object.values(table.reduce((acc, el) => {
@@ -834,7 +839,10 @@ function renderFinalScatterplot() {
   });
 
   // TODO
-  updateLegend(table, {})
+  updateLegend(table, {
+    sLabel,
+    cLabel
+  })
 
   return renderScatterplot(table, x, y, size, color, {
     id,
@@ -1227,8 +1235,10 @@ function dynamicScatterplotAnnotation(data, x, y, keys) {
 
 /**
  * Legend
+ * @param {object} data
+ * @param {{ sKey: string, size, cKey: string, color }} options
  */
-function updateLegend() {
+function updateLegend(data, options) {
   switch (STATE.page) {
     // case 1:
     //   break;
@@ -1236,16 +1246,76 @@ function updateLegend() {
     //   break;
     case 3:
       // Colors
-      getLegend()
+      getLegend().selectAll('.legend-item').remove()
+      generateSizeLegend(data, options.size, options.sKey)
+      generateColorLegend(data, options.color, options.cKey)
 
       break;
     case 4:
-      getLegend()
+      getLegend().selectAll('.legend-item').remove()
+      generateSizeLegend(data, options.size, options.sKey)
+      generateColorLegend(data, options.color, options.cKey)
 
       break;
     default:
       break;
   }
+}
+
+function generateSizeLegend(data, size, sKey) {
+  const elements = [
+    d3.min(data, d => d[sKey]),
+    d3.quantile(data, 0.25, d => d[sKey]),
+    d3.mean(data, d => d[sKey]),
+    d3.quantile(data, 0.75, d => d[sKey]),
+    d3.max(data, d => d[sKey])
+  ]
+
+  const legend = getLegend()
+
+  // TODO is this the right place? Should I place in g?
+  let title = legend.append('text')
+    .attr('class', 'legend-item title')
+    .text(LABELS[sKey])
+
+  let item = legend.append('g')
+    .attr('class', 'legend-item sizes')
+    .data(elements)
+    .enter()
+
+  // Add circles
+  item.append("circle")
+    .attr("cy", d => 200 - scale(d))
+    .attr("r", d => scale(d))
+    .attr("stroke", "black")
+    .attr("fill", "none");
+
+  // Add text labels
+  item.append("text")
+    .attr("y", d => 200 - 2 * scale(d) + 3)
+    .style("dominant-baseline", "hanging")
+    .style("text-anchor", "middle")
+    .text(d => d);
+}
+
+function generateColorLegend(data, color, cKey) {
+  const values = Array.from(d3.union(data.map(el => el[cKey])))
+  values.sort()
+
+  const legend = getLegend()
+
+  // TODO is this the right place? Should I place in g?
+  let title = legend.append('text')
+    .attr('class', 'legend-item title')
+    .text(LABELS[cKey])
+
+  let item = legend.append('g')
+    .attr('class', 'legend-item table')
+    .data(values)
+    .enter()
+
+  item.append("circle").attr("cx", 8).attr("cy", 0).attr("r", 8).attr("fill", d => color(d)).attr("opacity", 0.7);
+  item.append("text").attr("x", 20).attr("y", 0).attr("dy", "0.35em").text(d => d);
 }
 
 /**
