@@ -235,7 +235,7 @@ function getLegend() {
     legend = legend
       .attr('height', HEIGHT)
       .attr('width', MARGIN.right)
-      .attr('x', WIDTH - MARGIN.right)
+      .attr('transform', `translate(${WIDTH - MARGIN.right + 20},${MARGIN.top})`)
   }
 
   return legend
@@ -958,6 +958,7 @@ function updateStateFromPage() {
   // Clear hovers and badges
   clearBadgeAnnotations()
   clearHoverAnnotations()
+  clearLegend()
 }
 
 function flipAxes() {
@@ -1209,7 +1210,7 @@ function scatterPlotMouseOver(event, data, x, y, size, color, keys) {
     ${LABELS[keys.size]}: ${data[keys.size]},
     ${LABELS[keys.color]}: ${data[keys.color]})
     `
-    label = `Most Popular Title: ${source.Name} - Mechanics include ${source.playTime}`
+    label = `Most Popular Title: ${source.Name} - Game Length: ${source.playTime} minutes`
   } else {
     source = data
     title = source.Name
@@ -1246,12 +1247,18 @@ function dynamicScatterplotAnnotation(data, x, y, keys) {
   STATE.hoverId = data[keys.id]
 }
 
+function clearLegend() {
+  getLegend().selectAll('.legend-item').remove()
+}
+
 /**
  * Legend
  * @param {object} data
  * @param {{ sKey: string, size, cKey: string, color, sLabel: string, cLabel: string }} options
  */
 function updateLegend(data, options) {
+  const gen = createYGenerator()
+
   switch (STATE.page) {
     // case 0:
     //   break;
@@ -1259,27 +1266,31 @@ function updateLegend(data, options) {
     //   break;
     case 2:
       // Colors
-      getLegend().selectAll('.legend-item').remove()
-      generateSizeLegend(data, options)
-      generateColorLegend(data, options)
+      generateSizeLegend(data, gen, options)
 
+      // adds space
+      gen.next()
+
+      generateColorLegend(data, gen, options)
       break;
     case 3:
-      getLegend().selectAll('.legend-item').remove()
-      generateSizeLegend(data, options)
-      generateColorLegend(data, options)
+      generateSizeLegend(data, gen, options)
 
+      // adds space
+      gen.next()
+
+      generateColorLegend(data, gen, options)
       break;
     default:
       break;
   }
 }
 
-function generateSizeLegend(data, options) {
+function generateSizeLegend(data, position, options) {
   const elements = [
     d3.min(data, d => d[options.sKey]),
     d3.quantile(data, 0.25, d => d[options.sKey]),
-    d3.mean(data, d => d[sKey]),
+    d3.mean(data, d => d[options.sKey]),
     d3.quantile(data, 0.75, d => d[options.sKey]),
     d3.max(data, d => d[options.sKey])
   ]
@@ -1311,7 +1322,7 @@ function generateSizeLegend(data, options) {
     .text(d => d);
 }
 
-function generateColorLegend(data, options) {
+function generateColorLegend(data, position, options) {
   const values = Array.from(d3.union(data.map(el => el[options.cKey])))
   values.sort()
 
@@ -1320,15 +1331,35 @@ function generateColorLegend(data, options) {
   // TODO is this the right place? Should I place in g?
   let title = legend.append('text')
     .attr('class', 'legend-item title')
+    .attr('transform', `translate(0, ${position.next().value * 25 + 20})`)
     .text(LABELS[options.cKey])
 
-  let item = legend.append('g')
-    .attr('class', 'legend-item table')
+  let item = legend.selectAll('.legend-item')
     .data(values)
     .enter()
+    .append('g')
+    .attr('class', 'legend-item table')
+    .attr('transform', () => `translate(0, ${position.next().value * 25 + 20})`)
 
-  item.append("circle").attr("cx", 8).attr("cy", 0).attr("r", 8).attr("fill", d => options.color(d)).attr("opacity", 0.7);
-  item.append("text").attr("x", 20).attr("y", 0).attr("dy", "0.35em").text(d => d);
+  item.append("circle")
+    .attr("cx", 8)
+    .attr("cy", 0)
+    .attr("r", 8)
+    .attr("fill", d => options.color(d))
+    .attr("opacity", 0.7);
+
+  item.append("text")
+    .attr("x", 20)
+    .attr("y", 0)
+    .attr("dy", "0.35em")
+    .text(d => d);
+}
+
+function* createYGenerator(start = 0) {
+  let i = start;
+  while (true) {
+    yield i++;
+  }
 }
 
 /**
