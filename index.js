@@ -490,7 +490,7 @@ function getScaleFromKeyAndType(table, key, type) {
       values.sort();
 
       scale = d3.scalePoint();
-      domain = d3.union(values);
+      domain = d3.sort(d3.union(values));
       break;
     case DATA_TYPES.QUANT:
     case DATA_TYPES.FIELD:
@@ -511,6 +511,8 @@ function determineScaleForQual(table, key, type) {
   // -0.5 < skew && skew < 0.5 no transform
   let scale = d3.scaleLinear()
   let domain = d3.extent(table, d => d[key])
+
+  if (domain[1] - domain[0] <= 100) return { scale, domain }
 
   let skew = measureSkew(table, key)
   let hasZero = table.reduce((acc, d) => acc || d[key] === 0, false)
@@ -535,19 +537,6 @@ function determineScaleForQual(table, key, type) {
     scale = d3.scaleLog()
     domain = [1, domain[1]]
   }
-  // TODO breaks figure out why
-  //  else {
-  //   // pad the linear scales so that the minimum and maximum is not directly used cutting off their visibility potentially.
-  //   const padding = (domain[1] - domain[0]) * 0.1;
-  //   domain[0] = domain[0] - padding;
-  //   domain[1] = domain[0] + padding;
-  // }
-
-  // let x = d3.scaleLinear().domain(xDomain).range([MARGIN.left, WIDTH - MARGIN.right]);
-  // let y = d3.scaleLog().domain(d3.extent(table, d => d.count)).range([HEIGHT - MARGIN.bottom, MARGIN.top]);
-
-  // let p = d3.scalePoint()
-  // // d3.scaleOrdinal()
 
   return {
     scale,
@@ -786,8 +775,7 @@ function renderFinalScatterplot() {
 
   let id = 'ID';
   // Determine id via values from the above.
-  // let x = getScaleFromKeyAndType(table, xKey, xType).range([MARGIN.left, WIDTH - MARGIN.right]);
-  let x = d3.scaleLog().domain([1, d3.max(table, d => d[xKey])]).range([MARGIN.left, WIDTH - MARGIN.right]);
+  let x = getScaleFromKeyAndType(table, xKey, xType).range([MARGIN.left, WIDTH - MARGIN.right]);
   let y = getScaleFromKeyAndType(table, yKey, yType).range([HEIGHT - MARGIN.bottom, MARGIN.top])
 
   // TODO finish this section
@@ -807,13 +795,14 @@ function renderFinalScatterplot() {
 
     // bin and create count using sKey
     table = Object.values(table.reduce((acc, el) => {
-      const key = `${el[xKey]}_${el[yKey]}`;
+      const key = `${el[xKey]}_${el[yKey]}_${el[cKey]}`;
 
       if (!acc[key]) {
         acc[key] = {
           id: key,
           [xKey]: el[xKey],
           [yKey]: el[yKey],
+          [cKey]: el[cKey],
           data: []
         }
       }
@@ -853,8 +842,12 @@ function renderFinalScatterplot() {
 
   // TODO
   updateLegend(table, {
-    sLabel,
-    cLabel
+    sKey,
+    cKey,
+    sLabel: LABELS.count,
+    cLabel,
+    size,
+    color
   })
 
   return renderScatterplot(table, x, y, size, color, {
@@ -981,9 +974,6 @@ function setupEvents() {
 }
 
 function selectChange(event) {
-  console.log(event, event.target.id, event.target.value);
-
-  // TODO trigger
   renderFinalScatterplot()
 }
 
@@ -1266,20 +1256,24 @@ function updateLegend(data, options) {
     //   break;
     case 2:
       // Colors
-      generateSizeLegend(data, gen, options)
+      if (options.sKey && options.sLabel) generateSizeLegend(data, gen, options)
 
       // adds space
       gen.next()
+      gen.next()
+      gen.next()
 
-      generateColorLegend(data, gen, options)
+      if (options.cKey && options.cLabel) generateColorLegend(data, gen, options)
       break;
     case 3:
-      generateSizeLegend(data, gen, options)
+      if (options.sKey && options.sLabel) generateSizeLegend(data, gen, options)
 
       // adds space
       gen.next()
+      gen.next()
+      gen.next()
 
-      generateColorLegend(data, gen, options)
+      if (options.cKey && options.cLabel) generateColorLegend(data, gen, options)
       break;
     default:
       break;
@@ -1290,41 +1284,47 @@ function generateSizeLegend(data, position, options) {
   const elements = [
     d3.min(data, d => d[options.sKey]),
     d3.quantile(data, 0.25, d => d[options.sKey]),
-    d3.mean(data, d => d[options.sKey]),
     d3.quantile(data, 0.75, d => d[options.sKey]),
     d3.max(data, d => d[options.sKey])
   ]
 
   const legend = getLegend()
 
-  // TODO is this the right place? Should I place in g?
   let title = legend.append('text')
     .attr('class', 'legend-item title')
+    .attr('transform', `translate(0, ${position.next().value * 25})`)
     .text(LABELS[options.sKey])
 
-  let item = legend.append('g')
-    .attr('class', 'legend-item sizes')
+  let circleGroup = legend
+    .append('g')
+    .attr('class', 'legend-item size-container')
+    .attr('transform', 'translate(30, -175)')
+    .selectAll('.legend-item.sizes')
     .data(elements)
     .enter()
+    .append('g')
+    .attr('class', 'legend-item sizes')
+    .attr('transform', `translate(0, ${position.next().value * 25 + 20})`);
 
   // Add circles
-  item.append("circle")
-    .attr("cy", d => 200 - options.size(d))
+  circleGroup.append("circle")
+    .attr("cy", (d, i) => 145 + 20 * i)
     .attr("r", d => options.size(d))
     .attr("stroke", "black")
-    .attr("fill", "none");
+    .attr("fill", "none")
+
 
   // Add text labels
-  item.append("text")
-    .attr("y", d => 200 - 2 * options.size(d) + 3)
+  circleGroup.append("text")
+    .attr('x', d => 40)
+    .attr("y", (d,i) => 140 + 20 * i)
     .style("dominant-baseline", "hanging")
     .style("text-anchor", "middle")
-    .text(d => d);
+    .text(d => Math.round(d));
 }
 
 function generateColorLegend(data, position, options) {
-  const values = Array.from(d3.union(data.map(el => el[options.cKey])))
-  values.sort()
+  const values = Array.from(d3.sort(d3.union(data.map(el => el[options.cKey]))))
 
   const legend = getLegend()
 
@@ -1334,7 +1334,7 @@ function generateColorLegend(data, position, options) {
     .attr('transform', `translate(0, ${position.next().value * 25 + 20})`)
     .text(LABELS[options.cKey])
 
-  let item = legend.selectAll('.legend-item')
+  let item = legend.selectAll('.legend-item.table')
     .data(values)
     .enter()
     .append('g')
@@ -1352,7 +1352,7 @@ function generateColorLegend(data, position, options) {
     .attr("x", 20)
     .attr("y", 0)
     .attr("dy", "0.35em")
-    .text(d => d);
+    .text(d => d ?? 'None');
 }
 
 function* createYGenerator(start = 0) {
