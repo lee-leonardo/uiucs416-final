@@ -47,3 +47,7 @@ span {
 .legend-item.title {
   font: bold 18px serif;
 }
+
+.legend-item.sizes {
+  font-size: 12px;
+}
