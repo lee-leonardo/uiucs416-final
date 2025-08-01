@@ -716,7 +716,7 @@ function renderStep3() {
     // use bggRank to determine most popular game
     let popularIndex = 0;
     el.data.forEach((game, i) => {
-      if (game.bggRank > el.data[popularIndex].bggRank) {
+      if (game.bggRank < el.data[popularIndex].bggRank) {
         popularIndex = i;
       }
     });
