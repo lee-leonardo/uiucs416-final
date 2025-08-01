@@ -1352,7 +1352,10 @@ function generateColorLegend(data, position, options) {
     .attr("x", 20)
     .attr("y", 0)
     .attr("dy", "0.35em")
-    .text(d => d ?? 'None');
+    .text(d => {
+      if (d === '') return 'None'
+      return d
+    });
 }
 
 function* createYGenerator(start = 0) {
